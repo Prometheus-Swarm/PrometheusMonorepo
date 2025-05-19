@@ -168,8 +168,10 @@ class TodoCreatorWorkflow(Workflow):
         try:
             self.setup()
             # ==================== Generate issues ====================
-            generate_issues_phase = phases.IssueGenerationPhase(workflow=self)
+            generate_issues_phase = phases.IssueGenerationPhase(workflow=self, bounty_type=self.bounty_type)
             generate_issues_result = generate_issues_phase.execute()
+
+            print("generate_issues_result", generate_issues_result)
             # Check Issue Generation Result
             if not generate_issues_result or not generate_issues_result.get("success"):
                 log_error(
@@ -193,7 +195,7 @@ class TodoCreatorWorkflow(Workflow):
         Returns:
             dict: Validation result containing success status and data
         """
-        validate_issues_phase = phases.IssueValidationPhase(workflow=self)
+        validate_issues_phase = phases.IssueValidationPhase(workflow=self, bounty_type=self.bounty_type)
         validate_issues_result = validate_issues_phase.execute()
         if not validate_issues_result or not validate_issues_result.get("success"):
             log_error(
@@ -213,7 +215,7 @@ class TodoCreatorWorkflow(Workflow):
         try:
             self.setup()
             # ==================== Decompose feature into tasks ====================
-            decompose_phase = phases.TaskDecompositionPhase(workflow=self)
+            decompose_phase = phases.TaskDecompositionPhase(workflow=self, bounty_type=self.bounty_type)
             decomposition_result = decompose_phase.execute()
             # Check Decomposition Result
             if not decomposition_result or not decomposition_result.get("success"):
@@ -240,7 +242,7 @@ class TodoCreatorWorkflow(Workflow):
             log_key_value("Subtasks Number", len(self.context["subtasks"]))
 
             # ==================== Validation phase ====================
-            validation_phase = phases.TaskValidationPhase(workflow=self)
+            validation_phase = phases.TaskValidationPhase(workflow=self, bounty_type=self.bounty_type)
             validation_result = validation_phase.execute()
 
             if not validation_result or not validation_result.get("success"):
@@ -272,7 +274,7 @@ class TodoCreatorWorkflow(Workflow):
 
             # ==================== Regeneration phase ====================
             if len(self.context["auditedSubtasks"]) > 0:
-                regenerate_phase = phases.TaskRegenerationPhase(workflow=self)
+                regenerate_phase = phases.TaskRegenerationPhase(workflow=self, bounty_type=self.bounty_type)
                 regenerate_result = regenerate_phase.execute()
                 if not regenerate_result or not regenerate_result.get("success"):
                     log_error(
@@ -303,7 +305,7 @@ class TodoCreatorWorkflow(Workflow):
             # # TODO: Refine the Dependency Phase
             for task in tasks_data:
                 self.context["target_task"] = task
-                dependency_phase = phases.TaskDependencyPhase(workflow=self)
+                dependency_phase = phases.TaskDependencyPhase(workflow=self, bounty_type=self.bounty_type)
                 dependency_result = dependency_phase.execute()
                 if dependency_result is None or not dependency_result.get("success"):
                     log_error(
@@ -406,7 +408,7 @@ class TodoCreatorWorkflow(Workflow):
             self.context["issue_spec"] = self.issue_spec
 
             # Generate system prompt
-            system_prompt_phase = phases.SystemPromptGenerationPhase(workflow=self)
+            system_prompt_phase = phases.SystemPromptGenerationPhase(workflow=self, bounty_type=self.bounty_type)
             system_prompt_result = system_prompt_phase.execute()
 
             if not system_prompt_result or not system_prompt_result.get("success"):
