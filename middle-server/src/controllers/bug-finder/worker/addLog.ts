@@ -60,6 +60,7 @@ export const addErrorLogToDB = async (req: Request, res: Response) => {
     // check if stakingKey and error already in the DB
     const existingFailedInfo = await BugFinderErrorLogsModel.findOne({
       stakingKey,
+      swarmBountyId,
       "errors.message": errorMessage,
     });
     if (existingFailedInfo) {
@@ -78,7 +79,7 @@ export const addLogToDB = async (req: Request, res: Response) => {
   try {
     const { stakingKey, swarmBountyId, logMessage, logLevel, signature } = req.body;
 
-    console.log("addLogToDB", { stakingKey, swarmBountyId, logMessage, logLevel, signature });
+    // console.log("addLogToDB", { stakingKey, swarmBountyId, logMessage, logLevel, signature });
     // Verify Signature
     const { data, error } = await verifySignature(signature, stakingKey);
     if (error || !data) {
@@ -93,6 +94,7 @@ export const addLogToDB = async (req: Request, res: Response) => {
     // check if stakingKey and error already in the DB
     const existingFailedInfo = await BugFinderLogsModel.findOne({
       stakingKey,
+      swarmBountyId,
       "logs.message": logMessage,
     });
     if (existingFailedInfo) {
