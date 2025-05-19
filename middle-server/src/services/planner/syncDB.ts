@@ -16,8 +16,7 @@ export async function syncDB() {
   }
   const swarmBounties = data.data.filter(
     (bounty: any) =>
-      bounty.swarmType === SwarmBountyType.BUILD_FEATURE ||
-      bounty.swarmType === SwarmBountyType.DOCUMENT_SUMMARIZER,
+      bounty.swarmType === SwarmBountyType.BUILD_FEATURE || bounty.swarmType === SwarmBountyType.DOCUMENT_SUMMARIZER,
   );
   const specs = await SpecModel.find();
 
