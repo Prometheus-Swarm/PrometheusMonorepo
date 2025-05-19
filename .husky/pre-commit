@@ -1,0 +1,4 @@
+echo "Husky pre-commit hook is running..."
+echo "Current directory: $(pwd)"
+echo "Running prettier and lint commands in middle-server..."
+cd middle-server && yarn && yarn prettier --write . && yarn lint

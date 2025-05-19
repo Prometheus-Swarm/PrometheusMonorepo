@@ -1,0 +1,27 @@
+version: "3.8"
+services:
+  middle-server:
+    exclude_from_hc: true
+    build:
+      context: ./middle-server
+    environment:
+      - NODE_ENV=production
+    restart: always
+
+  orca-agent:
+    exclude_from_hc: true
+    build:
+      context: ./orca-agent
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+    restart: always
+
+  planner-agent:
+    exclude_from_hc: true
+    build:
+      context: ./planner-agent
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+    restart: always
