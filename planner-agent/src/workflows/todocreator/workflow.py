@@ -54,6 +54,7 @@ class TodoCreatorWorkflow(Workflow):
         fork_url,
         issue_spec,
         bounty_id,
+        bounty_type,
     ):
         # Extract owner and repo name from URL
         # URL format: https://github.com/owner/repo
@@ -72,7 +73,11 @@ class TodoCreatorWorkflow(Workflow):
             fork_owner=fork_owner,
             fork_url=fork_url,
             bounty_id=bounty_id,
+            
         )
+
+
+        self.bounty_type = bounty_type
         self.issue_spec = issue_spec
 
     def setup(self):
@@ -129,7 +134,7 @@ class TodoCreatorWorkflow(Workflow):
         self.context["issues"] = generate_issues_result["data"]["issues"]
 
         for issue in generate_issues_result["data"]["issues"]:
-            self.context["feature_spec"] = issue
+            self.context["current_issue"] = issue
             task_result = self.generate_tasks(issue["uuid"])
             if task_result:
                 tasks.append(task_result["data"]["tasks"])
@@ -364,7 +369,7 @@ class TodoCreatorWorkflow(Workflow):
                             uuid=task["uuid"],
                             issueUuid=issue_uuid,
                             bountyId=self.context["bounty_id"],
-                            bountyType=SwarmBountyType.BUILD_FEATURE,
+                            bountyType=self.bounty_type,
                         )
                         insert_task_to_mongodb(task_model)
                 except Exception as e:
@@ -416,7 +421,7 @@ class TodoCreatorWorkflow(Workflow):
                 system_prompt_model = SystemPromptModel(
                     prompt=system_prompt_result["data"]["prompt"],
                     bountyId=self.context["bounty_id"],
-                    bountyType=SwarmBountyType.BUILD_FEATURE,
+                    bountyType=self.bounty_type,
                 )
                 insert_system_prompt_to_mongodb(system_prompt_model)
             except Exception as e:

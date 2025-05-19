@@ -14,7 +14,11 @@ export async function syncDB() {
     console.log("No data found");
     return;
   }
-  const swarmBounties = data.data.filter((bounty: any) => bounty.swarmType === SwarmBountyType.BUILD_FEATURE);
+  const swarmBounties = data.data.filter(
+    (bounty: any) =>
+      bounty.swarmType === SwarmBountyType.BUILD_FEATURE ||
+      bounty.swarmType === SwarmBountyType.DOCUMENT_SUMMARIZER,
+  );
   const specs = await SpecModel.find();
 
   // Create a map of existing specs by swarmBountyId for quick lookup
@@ -40,6 +44,7 @@ export async function syncDB() {
         forkUrl: forkUrl,
         issueSpec: bounty.description,
         bountyId: bountyId,
+        bountyType: bounty.swarmType as SwarmBountyType,
       });
       if (response.statuscode < 200 || response.statuscode >= 300) {
         await sendMessageToSlack(
