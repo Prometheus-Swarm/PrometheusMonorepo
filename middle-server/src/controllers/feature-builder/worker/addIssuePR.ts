@@ -50,10 +50,14 @@ async function verifySignatureData(
     const body = JSON.parse(data);
     console.log("signature payload", { body, pubKey, stakingKey });
     console.log("taskIDs match", taskIDs.includes(body.taskId));
-    console.log("typeof body.roundNumber", typeof body.roundNumber);
-    console.log("body.action", body.action);
-    console.log("body.pubKey", body.pubKey);
-    console.log("body.stakingKey", body.stakingKey);
+    console.log("roundNumber ok", typeof body.roundNumber === "number");
+    console.log("action matches", body.action === action);
+    console.log("pubKey matches", body.pubKey === pubKey);
+    console.log("stakingKey matches", body.stakingKey === stakingKey);
+    console.log("isFinal ok", body.isFinal !== undefined);
+    console.log("uuid ok", body.uuid !== undefined);
+    console.log("bountyId ok", body.bountyId !== undefined);
+    console.log("prUrl ok", body.prUrl !== undefined);
     if (
       !body.taskId ||
       !taskIDs.includes(body.taskId) ||
@@ -64,12 +68,8 @@ async function verifySignatureData(
       !body.stakingKey ||
       body.stakingKey !== stakingKey ||
       body.isFinal === undefined ||
-      (body.isFinal && body.prUrl === undefined)
+      (body.isFinal && (!body.uuid || !body.bountyId || !body.prUrl))
     ) {
-      return null;
-    }
-
-    if (body.isFinal && (!body.uuid || !body.bountyId)) {
       return null;
     }
 
