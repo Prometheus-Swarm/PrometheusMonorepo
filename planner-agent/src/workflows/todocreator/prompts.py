@@ -219,13 +219,13 @@ PROMPTS = {
     ),
     "docs_validate_subtasks": (
         "Review the following documentation subsections to ensure they meet these criteria:\n"
-        "1. Each subsection focuses on a single topic or concept\n"
-        "2. Each subsection builds knowledge progressively\n"
-        "3. Each subsection includes practical examples\n"
-        "4. Content is accessible to the target audience\n"
-        "5. Visual aids are specified where helpful\n"
-        "6. No critical documentation aspects are missing\n"
-        "7. Each subsection serves a clear purpose\n\n"
+        "1. Each subsection has clear, focused content that serves a specific purpose\n"
+        "2. Content is well-structured and follows a logical flow\n"
+        "3. Information is presented in a clear and accessible manner\n"
+        "4. Examples and explanations are practical and relevant\n"
+        "5. Visual aids are suggested where they would enhance understanding\n"
+        "6. All essential documentation aspects are covered\n"
+        "7. Content is appropriate for the target audience\n\n"
         "Subsections to validate:\n{subtasks}\n\n"
         "If any issues are found, provide specific recommendations for improvement."
     ),

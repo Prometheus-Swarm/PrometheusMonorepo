@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
 import "dotenv/config";
 
-import { DocumentationModel, DocumentationStatus } from "../../../models/Documentation";
+import { TodoModel, DocumentationStatus } from "../../../models/Todo";
 // import { documentSummarizerTaskID } from "../../config/constant";
 import { isValidStakingKey } from "../../../utils/taskState";
 import { verifySignature } from "../../../utils/sign";
-import { documentSummarizerTaskID, SwarmBountyStatus } from "../../../config/constant";
+import { documentSummarizerTaskID, SwarmBountyStatus, SwarmBountyType } from "../../../config/constant";
 import { updateSwarmBountyStatus } from "../../../services/swarmBounty/updateStatus";
 import { getRoundTime } from "../../../utils/taskState/getRoundTime";
 import { getCurrentRound } from "../../../utils/taskState/submissionRound";
@@ -13,7 +13,7 @@ import { getCurrentRound } from "../../../utils/taskState/submissionRound";
 // Check if the user has already completed the task
 async function checkExistingAssignment(stakingKey: string) {
   try {
-    const result = await DocumentationModel.findOne({
+    const result = await TodoModel.findOne({
       taskId: documentSummarizerTaskID,
       stakingKey: stakingKey,
       status: { $nin: [DocumentationStatus.DONE, DocumentationStatus.FAILED] },
@@ -22,7 +22,7 @@ async function checkExistingAssignment(stakingKey: string) {
     if (!result) return null;
 
     // Find the specific assignment entry
-    const assignment = result.assignedTo.find(
+    const assignment = result.assignees?.find(
       (a: any) => a.stakingKey === stakingKey && a.taskId === documentSummarizerTaskID,
     );
 
@@ -82,15 +82,16 @@ export const preProcessTodoLogic = async () => {
   // if (process.env.NODE_ENV !== "development") {
   //   await syncDB();
   // }
-  await updateFailedPlannerTask();
+  await updateFailedTodoTask();
 };
-export const updateFailedPlannerTask = async () => {
-  const docs = await DocumentationModel.find({
+export const updateFailedTodoTask = async () => {
+  const docs = await TodoModel.find({
+    bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER,
     assignedTo: { $size: 5 },
     status: { $nin: [DocumentationStatus.DONE, DocumentationStatus.FAILED] },
   });
   for (const doc of docs) {
-    for (const assignee of doc.assignedTo) {
+    for (const assignee of doc.assignees ?? []) {
       if (assignee.prUrl) {
         doc.status = DocumentationStatus.DONE;
         break;
@@ -98,8 +99,8 @@ export const updateFailedPlannerTask = async () => {
     }
     if (doc.status !== DocumentationStatus.DONE) {
       doc.status = DocumentationStatus.FAILED;
-      if (process.env.NODE_ENV !== "development") {
-        await updateSwarmBountyStatus(doc.swarmBountyId, SwarmBountyStatus.FAILED);
+      if (process.env.NODE_ENV !== "development" && doc.bountyId) {
+        await updateSwarmBountyStatus(doc.bountyId, SwarmBountyStatus.FAILED);
       }
     }
     await doc.save();
@@ -158,7 +159,7 @@ export const fetchTodoLogic = async (
           success: true,
           role: "worker",
           data: {
-            id: existingAssignment.spec.swarmBountyId.toString(),
+            id: existingAssignment.spec.bountyId?.toString() ?? '',
             repo_owner: existingAssignment.spec.repoOwner,
             repo_name: existingAssignment.spec.repoName,
           },
@@ -191,7 +192,7 @@ export const fetchTodoLogic = async (
     /**
      * The design of the task assignment is like ACL...
      */
-    const updatedTodo = await DocumentationModel.findOneAndUpdate(
+    const updatedTodo = await TodoModel.findOneAndUpdate(
       {
         // Not assigned to the nodes that have already attempted the task
         $nor: [
@@ -199,6 +200,7 @@ export const fetchTodoLogic = async (
           { "assignedTo.stakingKey": requestBody.stakingKey },
           { "assignedTo.githubUsername": signatureData.githubUsername },
         ],
+        bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER,
         $or: [
           // Condition: If Documentation Status is Initialized, then it should be assigned to the user
           { $and: [{ status: DocumentationStatus.INITIALIZED }] },
@@ -264,8 +266,8 @@ export const fetchTodoLogic = async (
       };
     }
     try {
-      if (process.env.NODE_ENV !== "development") {
-        await updateSwarmBountyStatus(updatedTodo.swarmBountyId, SwarmBountyStatus.ASSIGNED);
+      if (process.env.NODE_ENV !== "development" && updatedTodo.bountyId) {
+        await updateSwarmBountyStatus(updatedTodo.bountyId, SwarmBountyStatus.ASSIGNED);
       }
     } catch (error) {
       console.error("Error updating swarm bounty status:", error);
@@ -287,7 +289,7 @@ export const fetchTodoLogic = async (
         success: true,
         role: "worker",
         data: {
-          id: updatedTodo.swarmBountyId.toString(),
+          id: updatedTodo.bountyId?.toString() ?? '',
           repo_owner: updatedTodo.repoOwner,
           repo_name: updatedTodo.repoName,
         },
