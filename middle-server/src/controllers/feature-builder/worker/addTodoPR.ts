@@ -8,23 +8,23 @@ function verifyRequestBody(req: Request): {
   signature: string;
   pubKey: string;
   stakingKey: string;
-  todo_uuid: string;
-  isFinal: boolean;
+  uuid?: string;
   prUrl?: string;
+  bountyId?: string;
 } | null {
   try {
     console.log("req.body", req.body);
     const signature = req.body.signature as string;
     const pubKey = req.body.pubKey as string;
     const stakingKey = req.body.stakingKey as string;
-    const todo_uuid = req.body.todo_uuid as string;
+    const uuid = req.body.uuid as string;
     const prUrl = req.body.prUrl as string;
-    const isFinal = req.body.isFinal as boolean;
-    if (!signature || !pubKey || !stakingKey || !todo_uuid || isFinal === undefined || (isFinal && !prUrl)) {
+    const bountyId = req.body.bountyId as string;
+    if (!signature || !pubKey || !stakingKey) {
       return null;
     }
 
-    return { signature, pubKey, stakingKey, todo_uuid, isFinal, prUrl };
+    return { signature, pubKey, stakingKey, uuid, prUrl, bountyId };
   } catch {
     return null;
   }
@@ -36,7 +36,14 @@ async function verifySignatureData(
   pubKey: string,
   stakingKey: string,
   action: string,
-): Promise<{ roundNumber: number; taskId: string; prUrl: string; isFinal: boolean } | null> {
+): Promise<{
+  roundNumber: number;
+  taskId: string;
+  prUrl: string;
+  isFinal: boolean;
+  uuid?: string;
+  bountyId?: string;
+} | null> {
   try {
     const { data, error } = await verifySignature(signature, stakingKey);
     if (error || !data) {
@@ -64,7 +71,20 @@ async function verifySignatureData(
     ) {
       return null;
     }
-    return { roundNumber: body.roundNumber, taskId: body.taskId, prUrl: body.prUrl, isFinal: body.isFinal };
+
+    // For final PRs, we expect uuid and bountyId in the signature
+    if (body.isFinal && (!body.uuid || !body.bountyId)) {
+      return null;
+    }
+
+    return {
+      roundNumber: body.roundNumber,
+      taskId: body.taskId,
+      prUrl: body.prUrl,
+      isFinal: body.isFinal,
+      uuid: body.uuid,
+      bountyId: body.bountyId,
+    };
   } catch {
     return null;
   }
@@ -77,24 +97,37 @@ async function updateTodoWithPRUrl(
   prUrl: string,
   isFinal: boolean,
 ): Promise<boolean> {
-  console.log("updateTodoWithPRUrl", { todo_uuid, stakingKey, roundNumber, prUrl });
+  console.log("updateTodoWithPRUrl", { todo_uuid, stakingKey, roundNumber, prUrl, isFinal });
+
+  // For draft PRs, look up by roundNumber
+  // For final PRs, look up by existing prUrl
+  const arrayFilters = isFinal
+    ? [{ "elem.stakingKey": stakingKey, "elem.prUrl": prUrl }]
+    : [{ "elem.stakingKey": stakingKey, "elem.roundNumber": roundNumber }];
+
+  const updateFields = isFinal
+    ? {
+        status: TodoStatus.IN_REVIEW,
+        "assignees.$[elem].isFinal": true,
+        "assignees.$[elem].roundNumber": roundNumber, // Update roundNumber for final PR
+      }
+    : {
+        status: TodoStatus.IN_PROGRESS,
+        "assignees.$[elem].prUrl": prUrl,
+        "assignees.$[elem].isFinal": false,
+      };
+
   const result = await TodoModel.findOneAndUpdate(
     {
       uuid: todo_uuid,
       bountyType: SwarmBountyType.BUILD_FEATURE,
-      assignees: {
-        $elemMatch: {
-          stakingKey: stakingKey,
-          roundNumber: roundNumber,
-        },
-      },
     },
     {
-      $set: {
-        status: isFinal ? TodoStatus.IN_REVIEW : TodoStatus.IN_PROGRESS,
-        "assignees.$.prUrl": prUrl,
-        "assignees.$.isFinal": isFinal,
-      },
+      $set: updateFields,
+    },
+    {
+      arrayFilters: arrayFilters,
+      new: true,
     },
   )
     .select("_id")
@@ -146,10 +179,18 @@ export const addPRLogic = async (
     signature: string;
     pubKey: string;
     stakingKey: string;
-    todo_uuid: string;
+    uuid?: string;
     prUrl?: string;
+    bountyId?: string;
   },
-  signatureData: { roundNumber: number; taskId: string; prUrl?: string; isFinal: boolean },
+  signatureData: {
+    roundNumber: number;
+    taskId: string;
+    prUrl?: string;
+    isFinal: boolean;
+    uuid?: string;
+    bountyId?: string;
+  },
 ) => {
   const prUrl = signatureData.prUrl ?? requestBody.prUrl;
   if (!prUrl) {
@@ -162,9 +203,21 @@ export const addPRLogic = async (
     };
   }
 
+  // Get uuid from either signature (if final) or request body (if draft)
+  const uuid = signatureData.isFinal ? signatureData.uuid : requestBody.uuid;
+  if (!uuid) {
+    return {
+      statuscode: 400,
+      data: {
+        success: false,
+        message: "Todo UUID is required",
+      },
+    };
+  }
+
   console.log("prUrl", prUrl);
   const result = await updateTodoWithPRUrl(
-    requestBody.todo_uuid,
+    uuid,
     requestBody.stakingKey,
     signatureData.roundNumber,
     prUrl,
