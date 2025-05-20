@@ -12,20 +12,21 @@ import { builder247DB } from "../services/database/database";
 })
 class StarFollow {
   @prop({ required: true })
-  public gitHubId!: string;
+  public repoOwner!: string;
 
+  @prop({ required: true })
+  public repoName!: string;
+
+  @prop({ type: () => [AssignedInfo], default: [] })
+  public assignedTo!: AssignedInfo[];
+}
+
+class AssignedInfo {
   @prop({ required: true })
   public stakingKey!: string;
 
-  // Username is changable, so we store GitHubUsername as a backup
-  @prop({ required: true })
-  public gitHubUsername!: string;
-
   @prop({ required: false })
-  public pendingRepos!: string[];
-
-  @prop({ required: false })
-  public completedRepos!: string[];
+  public githubUsername?: string;
 }
 
 const StarFollowModel = getModelForClass(StarFollow);
