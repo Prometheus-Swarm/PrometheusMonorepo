@@ -49,11 +49,13 @@ function verifyRequestBody(req: Request): { taskId: string; round: number } | nu
 
 /**
  * Reset stale assignments for both todos and issues
- * This looks for any assignments where the last assignee's round number is <= current round
+ * This looks for any assignments where:
+ * 1. The last assignee's round number is <= current round, or
+ * 2. The last assignee's task ID doesn't match the current task ID
  * and the status is still in an active state
  */
-async function resetStaleAssignments(round: number): Promise<void> {
-  console.log(`Resetting stale assignments for round ${round}`);
+async function resetStaleAssignments(round: number, currentTaskId: string): Promise<void> {
+  console.log(`Resetting stale assignments for round ${round} and task ID ${currentTaskId}`);
 
   // Reset stale todos
   const staleTodos = await TodoModel.find({
@@ -65,12 +67,14 @@ async function resetStaleAssignments(round: number): Promise<void> {
   for (const todo of staleTodos) {
     if (!todo.assignees || todo.assignees.length === 0) continue;
     const lastAssignee = todo.assignees[todo.assignees.length - 1];
-    if (lastAssignee && lastAssignee.roundNumber <= round) {
+    if (lastAssignee && (lastAssignee.roundNumber <= round || lastAssignee.taskId !== currentTaskId)) {
       if (todo.assignees.length >= 5) {
         console.log(`Setting stale todo ${todo._id} to FAILED - has ${todo.assignees.length} assignees`);
         todo.status = TodoStatus.FAILED;
       } else {
-        console.log(`Resetting stale todo ${todo._id} from ${todo.status} to INITIALIZED`);
+        console.log(
+          `Resetting stale todo ${todo._id} from ${todo.status} to INITIALIZED - ${lastAssignee.taskId !== currentTaskId ? "task ID mismatch" : "round number expired"}`,
+        );
         todo.status = TodoStatus.INITIALIZED;
       }
       await todo.save();
@@ -87,12 +91,14 @@ async function resetStaleAssignments(round: number): Promise<void> {
   for (const issue of staleIssues) {
     if (!issue.assignees || issue.assignees.length === 0) continue;
     const lastAssignee = issue.assignees[issue.assignees.length - 1];
-    if (lastAssignee && lastAssignee.roundNumber <= round) {
+    if (lastAssignee && (lastAssignee.roundNumber <= round || lastAssignee.taskId !== currentTaskId)) {
       if (issue.assignees.length >= 5) {
         console.log(`Setting stale issue ${issue.uuid} to FAILED - has ${issue.assignees.length} assignees`);
         issue.status = IssueStatus.FAILED;
       } else {
-        console.log(`Resetting stale issue ${issue.uuid} from ${issue.status} to ASSIGN_PENDING`);
+        console.log(
+          `Resetting stale issue ${issue.uuid} from ${issue.status} to ASSIGN_PENDING - ${lastAssignee.taskId !== currentTaskId ? "task ID mismatch" : "round number expired"}`,
+        );
         issue.status = IssueStatus.ASSIGN_PENDING;
       }
       await issue.save();
@@ -184,7 +190,7 @@ export async function updateAuditResult(req: Request, res: Response): Promise<vo
         },
       );
       // Reset stale assignments when no distribution list
-      await resetStaleAssignments(round);
+      await resetStaleAssignments(round, taskId);
       throw new Error("No Distribution List Submitter found");
     }
 
@@ -199,7 +205,7 @@ export async function updateAuditResult(req: Request, res: Response): Promise<vo
         },
       );
       // Reset stale assignments when no distribution list
-      await resetStaleAssignments(round);
+      await resetStaleAssignments(round, taskId);
       throw new Error("No Distribution List found");
     }
 
@@ -210,7 +216,7 @@ export async function updateAuditResult(req: Request, res: Response): Promise<vo
     await triggerFetchAuditResultLogic(positiveKeys, negativeKeys, round);
 
     // Reset any stale assignments after processing
-    await resetStaleAssignments(round);
+    await resetStaleAssignments(round, taskId);
 
     await AuditModel.findByIdAndUpdate(audit._id, {
       status: AuditStatus.COMPLETED,
@@ -238,6 +244,9 @@ export async function updateAuditResult(req: Request, res: Response): Promise<vo
  */
 async function updateTestEnvironmentStatus(round: number): Promise<void> {
   console.log(`[TEST MODE] Starting audit results processing for round ${round}`);
+
+  // Use a test task ID in development mode
+  const testTaskId = "test-task-id";
 
   // 1. Update IN_REVIEW todos to APPROVED if they have PR URLs
   const inReviewTodos = await TodoModel.find({
@@ -380,7 +389,7 @@ async function updateTestEnvironmentStatus(round: number): Promise<void> {
   }
 
   // Add reset of stale assignments at the end of test environment updates
-  await resetStaleAssignments(round);
+  await resetStaleAssignments(round, testTaskId);
 
   console.log(`[TEST MODE] Completed audit results processing for round ${round}`);
 }
