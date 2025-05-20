@@ -2,19 +2,23 @@
 
 ## Project Overview
 
-Middle Server is a comprehensive monorepo solution designed to support distributed computing and service coordination. The project encompasses two primary services: the Middle Server and the Orca Agent, which work together to provide robust infrastructure for networked applications.
+A comprehensive monorepo designed to support distributed computing and agent-based services, specifically focused on middleware and agent functionality. The project encompasses multiple key services that work together to enable robust, scalable distributed computing infrastructure.
 
-### Core Purpose
-The project aims to facilitate seamless communication and synchronization between distributed services, with a focus on creating a flexible and scalable backend infrastructure. It provides a modular approach to managing and coordinating complex distributed systems.
+### Core Components
+- **Middle Server**: The primary server component responsible for coordinating and managing distributed computing tasks
+- **Orca Agent**: A supporting service that enhances the middleware's operational capabilities
+- **Planner Agent**: An additional agent for advanced task management and planning
 
 ### Key Features
-- **Modular Architecture**: Separates concerns between the Middle Server and Orca Agent
-- **Docker-Based Deployment**: Easily deployable using Docker Compose
-- **Production-Ready**: Configured with auto-restart and environment-specific settings
-- **Automated Development Workflow**: Integrated with Husky for Git hooks and consistent code quality
+- Modular microservices architecture
+- Docker-based deployment
+- Automated service management
+- Git hooks for development workflow
+- Production-ready configuration
+- Multi-service orchestration
 
-### Benefits
-- Simplified service coordination
-- Streamlined deployment process
-- Enhanced scalability for distributed computing environments
-- Robust infrastructure for complex networked applications
+### Technical Capabilities
+- Supports distributed computing workflows
+- Enables flexible and scalable service deployment
+- Provides robust infrastructure for agent-based computing
+- Implements continuous integration and deployment best practices
