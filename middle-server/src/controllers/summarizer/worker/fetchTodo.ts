@@ -159,7 +159,7 @@ export const fetchTodoLogic = async (
           success: true,
           role: "worker",
           data: {
-            id: existingAssignment.spec.bountyId?.toString() ?? '',
+            id: existingAssignment.spec.bountyId?.toString() ?? "",
             repo_owner: existingAssignment.spec.repoOwner,
             repo_name: existingAssignment.spec.repoName,
           },
@@ -289,7 +289,7 @@ export const fetchTodoLogic = async (
         success: true,
         role: "worker",
         data: {
-          id: updatedTodo.bountyId?.toString() ?? '',
+          id: updatedTodo.bountyId?.toString() ?? "",
           repo_owner: updatedTodo.repoOwner,
           repo_name: updatedTodo.repoName,
         },

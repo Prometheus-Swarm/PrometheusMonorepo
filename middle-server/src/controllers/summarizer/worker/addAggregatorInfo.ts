@@ -142,7 +142,7 @@ export const addAggregatorInfoLogic = async (signatureData: {
   // Update all todos associated with this issue to use the aggregator owner
   // This ensures workers fork from the aggregator repo, not the original
   const todoUpdateResult = await TodoModel.updateMany(
-    { issueUuid: signatureData.issueUuid},
+    { issueUuid: signatureData.issueUuid },
     { $set: { repoOwner: signatureData.githubUsername } },
   );
 
