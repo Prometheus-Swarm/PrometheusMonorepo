@@ -153,10 +153,17 @@ export async function updateAuditResult(req: Request, res: Response): Promise<vo
   const audit = await AuditModel.findOneAndUpdate(
     {
       roundNumber: round,
+      taskId: taskId,
+      bountyType: SwarmBountyType.BUILD_FEATURE,
     },
     {
-      status: AuditStatus.IN_PROGRESS,
-      error: null,
+      $set: {
+        roundNumber: round,
+        taskId: taskId,
+        bountyType: SwarmBountyType.BUILD_FEATURE,
+        status: AuditStatus.IN_PROGRESS,
+        error: null,
+      },
     },
     { upsert: true, new: true },
   );
