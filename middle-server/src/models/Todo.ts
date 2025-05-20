@@ -27,8 +27,12 @@ class AssignedInfo {
 
   @prop({ required: true })
   public githubUsername!: string;
+
   @prop({ required: true })
   public roundNumber!: number;
+
+  @prop({ required: true })
+  public taskId!: string;
 
   @prop({ required: false })
   public approved?: boolean;

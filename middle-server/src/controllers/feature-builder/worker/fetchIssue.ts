@@ -222,6 +222,7 @@ export const fetchIssueLogic = async (
             stakingKey: requestBody.stakingKey,
             githubUsername: signatureData.githubUsername,
             roundNumber: signatureData.roundNumber,
+            taskId: signatureData.taskId,
           },
         },
       },
