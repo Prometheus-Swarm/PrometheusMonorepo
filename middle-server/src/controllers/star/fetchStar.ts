@@ -39,7 +39,6 @@ export const fetchStar = async (req: Request, res: Response) => {
 async function verifySignatureData(
   signature: string,
   stakingKey: string,
-  // action: string,
 ): Promise<{ githubUsername: string } | null> {
   try {
     const { data, error } = await verifySignature(signature, stakingKey);
@@ -61,30 +60,67 @@ async function verifySignatureData(
 }
 
 export const fetchStarLogic = async (githubUsername: string, stakingKey: string) => {
-  const starFollow = await StarFollowModel.findOne({
-    assignedTo: { $not: { $elemMatch: { githubUsername } } },
+  // check if recent 30 mins already have a star
+  const recentStar = await StarFollowModel.findOne({
+    "assignedTo.githubUsername": githubUsername,
+    "assignedTo.assignedAt": { $gte: new Date(Date.now() - 30 * 60 * 1000) },
   });
-  if (!starFollow) {
+  if (recentStar) {
     return {
       statuscode: 409,
       data: {
         success: false,
-        message: "No available todos found",
+        message: "Recent star found",
       },
     };
   }
+
+  // check last 24 hours if already have 10 stars
+  const last24HoursStar = await StarFollowModel.find({
+    "assignedTo.githubUsername": githubUsername,
+    "assignedTo.assignedAt": { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+  });
+
+  if (last24HoursStar.length >= 10) {
+    return {
+      statuscode: 409,
+      data: {
+        success: false,
+        message: "Maximum stars reached for 24 hours",
+      },
+    };
+  }
+
+  // Find a repository that hasn't been starred by this user
+  const availableStar = await StarFollowModel.findOne({
+    "assignedTo.githubUsername": { $ne: githubUsername },
+  });
+
+  if (!availableStar) {
+    return {
+      statuscode: 409,
+      data: {
+        success: false,
+        message: "No available repositories found",
+      },
+    };
+  }
+
   // Add to assignedTo
-  starFollow.assignedTo.push({
+  availableStar.assignedTo.push({
     stakingKey,
     githubUsername,
+    assignedAt: new Date(),
   });
-  await starFollow.save();
+  
+  await StarFollowModel.findByIdAndUpdate(availableStar._id, availableStar);
+  
   return {
     statuscode: 200,
     data: {
       success: true,
-      repo_owner: starFollow.repoOwner,
-      repo_name: starFollow.repoName,
+      repo_owner: availableStar.repoOwner,
+      repo_name: availableStar.repoName,
     },
   };
 };
