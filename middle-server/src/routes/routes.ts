@@ -13,6 +13,7 @@ import { fetchIssue } from "../controllers/feature-builder/worker/fetchIssue";
 import { checkIssue } from "../controllers/feature-builder/worker/checkIssue";
 import { getSourceRepo } from "../controllers/feature-builder/worker/getSourceRepo";
 import { addErrorLogToDB, addLogToDB } from "../controllers/feature-builder/worker/addLog";
+import { recordMessage } from "../controllers/feature-builder/planner/recordMessage";
 
 /******** Planner ***********/
 import { fetchRequest as fetchPlannerRequest } from "../controllers/feature-builder/planner/fetchRequest";
@@ -45,6 +46,7 @@ router.post("/builder/check-issue", checkIssue as RequestHandler);
 router.post("/builder/record-log", addLogToDB as RequestHandler);
 router.post("/builder/record-error-log", addErrorLogToDB as RequestHandler);
 router.get("/builder/get-source-repo/:nodeType/:uuid", getSourceRepo as RequestHandler);
+router.post("/builder/record-message", recordMessage as RequestHandler);
 
 /********** Planner ***********/
 router.post("/planner/fetch-planner-todo", fetchPlannerRequest as RequestHandler);
