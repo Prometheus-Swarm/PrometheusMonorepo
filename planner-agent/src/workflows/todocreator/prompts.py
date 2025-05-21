@@ -231,6 +231,7 @@ PROMPTS = {
         "   - Section is logically placed in the documentation\n"
         "   - No significant overlap with other sections\n"
         "   - Dependencies on other sections are properly identified\n\n"
+        "Sections to validate:\n{subtasks}\n\n"
         "A section should be approved if it generally meets these criteria. Only reject if there are significant issues that would impact the quality or usability of the documentation.\n"
     ),
     "docs_regenerate_subtasks": (
