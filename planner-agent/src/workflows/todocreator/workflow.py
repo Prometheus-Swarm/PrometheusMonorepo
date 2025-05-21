@@ -126,7 +126,7 @@ class TodoCreatorWorkflow(Workflow):
     def run(self):
         generate_issues_result = self.generate_issues()
         self.context["issues"] = generate_issues_result["data"]["issues"]
-        approved_issues = generate_issues_result["data"]["approved"]
+        approved_issues = False
         while not approved_issues:
             validate_issues_result = self.validate_issues()
             approved_issues = validate_issues_result["data"]["approved"]

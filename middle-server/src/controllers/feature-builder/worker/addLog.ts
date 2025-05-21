@@ -1,21 +1,21 @@
 import { Request, Response } from "express";
-import { BugFinderErrorLogsModel } from "../../../models/BugFinderErrorLogs";
-import { BugFinderLogsModel } from "../../../models/BugFinderLogs";
+import { BuilderErrorLogsModel } from "../../../models/BuilderErrorLogs";
+import { BuilderLogsModel } from "../../../models/BuilderLogs";
 import { verifySignature } from "../../../utils/sign";
 
 export const addErrorLog = async (stakingKey: string, swarmBountyId: string, error: string) => {
   try {
-    const bugFinderErrorLogs = await BugFinderErrorLogsModel.findOne({ stakingKey, swarmBountyId });
-    if (bugFinderErrorLogs) {
-      bugFinderErrorLogs.errors.push({ message: error, timestamp: new Date() });
-      await bugFinderErrorLogs.save();
+    const builderErrorLogs = await BuilderErrorLogsModel.findOne({ stakingKey, swarmBountyId });
+    if (builderErrorLogs) {
+      builderErrorLogs.errors.push({ message: error, timestamp: new Date() });
+      await builderErrorLogs.save();
     } else {
-      const newBugFinderErrorLogs = new BugFinderErrorLogsModel({
+      const newBuilderErrorLogs = new BuilderErrorLogsModel({
         stakingKey,
         swarmBountyId,
         errors: [{ message: error, timestamp: new Date() }],
       });
-      await newBugFinderErrorLogs.save();
+      await newBuilderErrorLogs.save();
     }
   } catch (err) {
     console.error("Error adding failed info:", err);
@@ -25,17 +25,17 @@ export const addErrorLog = async (stakingKey: string, swarmBountyId: string, err
 
 export const addLog = async (stakingKey: string, swarmBountyId: string, logMessage: string, logLevel: string) => {
   try {
-    const bugFinderLogs = await BugFinderLogsModel.findOne({ stakingKey, swarmBountyId });
-    if (bugFinderLogs) {
-      bugFinderLogs.logs.push({ level: logLevel, message: logMessage, timestamp: new Date() });
-      await bugFinderLogs.save();
+    const builderLogs = await BuilderLogsModel.findOne({ stakingKey, swarmBountyId });
+    if (builderLogs) {
+      builderLogs.logs.push({ level: logLevel, message: logMessage, timestamp: new Date() });
+      await builderLogs.save();
     } else {
-      const newBugFinderLogs = new BugFinderLogsModel({
+      const newBuilderLogs = new BuilderLogsModel({
         stakingKey,
         swarmBountyId,
         logs: [{ level: logLevel, message: logMessage, timestamp: new Date() }],
       });
-      await newBugFinderLogs.save();
+      await newBuilderLogs.save();
     }
   } catch (err) {
     console.error("Error adding failed info:", err);
@@ -58,7 +58,7 @@ export const addErrorLogToDB = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Signature error - unparseable data" });
     }
     // check if stakingKey and error already in the DB
-    const existingFailedInfo = await BugFinderErrorLogsModel.findOne({
+    const existingFailedInfo = await BuilderErrorLogsModel.findOne({
       stakingKey,
       "errors.message": errorMessage,
     });
@@ -80,18 +80,18 @@ export const addLogToDB = async (req: Request, res: Response) => {
 
     console.log("addLogToDB", { stakingKey, swarmBountyId, logMessage, logLevel, signature });
     // Verify Signature
-    // const { data, error } = await verifySignature(signature, stakingKey);
-    // if (error || !data) {
-    //   console.log("signature error", error);
-    //   return null;
-    // }
-    // const parsedData = JSON.parse(data);
-    // if (stakingKey !== parsedData.stakingKey) {
-    //   return res.status(400).json({ message: "Signature error - unparseable data" });
-    // }
+    const { data, error } = await verifySignature(signature, stakingKey);
+    if (error || !data) {
+      console.log("signature error", error);
+      return null;
+    }
+    const parsedData = JSON.parse(data);
+    if (stakingKey !== parsedData.stakingKey) {
+      return res.status(400).json({ message: "Signature error - unparseable data" });
+    }
 
     // check if stakingKey and error already in the DB
-    const existingFailedInfo = await BugFinderLogsModel.findOne({
+    const existingFailedInfo = await BuilderLogsModel.findOne({
       stakingKey,
       "logs.message": logMessage,
     });
