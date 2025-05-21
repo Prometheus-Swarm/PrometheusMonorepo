@@ -6,6 +6,7 @@ import { checkConnections } from "./services/database/database";
 import summarizerRouter from "./routes/summarizer";
 import bugFinderRouter from "./routes/bug-finder";
 import prometheusRouter from "./routes/prometheus";
+import starRouter from "./routes/star";
 export const app = express();
 const port = process.env.PORT || 3000;
 
@@ -80,6 +81,7 @@ app.use("/api", router);
 app.use("/summarizer", summarizerRouter);
 app.use("/bug-finder", bugFinderRouter);
 app.use("/prometheus", prometheusRouter);
+app.use("/star", starRouter);
 
 export async function connectToDatabase() {
   try {

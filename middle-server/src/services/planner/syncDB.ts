@@ -22,7 +22,7 @@ export async function syncDB() {
 
   // Create a map of existing specs by swarmBountyId for quick lookup
   const existingSpecs = new Map(specs.map((spec) => [spec.swarmBountyId, spec]));
-
+  console.log("existingSpecs", existingSpecs.size);
   // Process each feature bounty
   for (const bounty of swarmBounties) {
     const bountyId = bounty._id.toString();
@@ -35,6 +35,8 @@ export async function syncDB() {
         repoName: bounty.githubUrl.split("/")[4], // Extract repo name from GitHub URL
         swarmBountyId: bountyId,
       });
+
+      console.log("created spec", bounty.projectName);
 
       const forkUrl = await createFork(bounty.githubUrl);
 

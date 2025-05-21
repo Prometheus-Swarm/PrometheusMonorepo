@@ -7,22 +7,22 @@ export function verifyRequestBody(req: Request): {
   signature: string;
   stakingKey: string;
   pubKey: string;
-  issueUuid: string;
-  isFinal: boolean;
+  uuid?: string;
   prUrl?: string;
+  bountyId?: string;
 } | null {
   console.log("verifyRequestBody", req.body);
   try {
     const signature = req.body.signature as string;
     const stakingKey = req.body.stakingKey as string;
     const pubKey = req.body.pubKey as string;
-    const issueUuid = req.body.issueUuid as string;
-    const isFinal = req.body.isFinal as boolean;
+    const uuid = req.body.uuid as string;
     const prUrl = req.body.prUrl as string;
-    if (!signature || !stakingKey || !pubKey || !issueUuid || isFinal === undefined || (isFinal && !prUrl)) {
+    const bountyId = req.body.bountyId as string;
+    if (!signature || !stakingKey || !pubKey) {
       return null;
     }
-    return { signature, stakingKey, pubKey, issueUuid, isFinal, prUrl };
+    return { signature, stakingKey, pubKey, uuid, prUrl, bountyId };
   } catch {
     return null;
   }
@@ -33,7 +33,14 @@ async function verifySignatureData(
   stakingKey: string,
   pubKey: string,
   action: string,
-): Promise<{ roundNumber: number; taskId: string; prUrl?: string; isFinal: boolean } | null> {
+): Promise<{
+  roundNumber: number;
+  taskId: string;
+  prUrl?: string;
+  isFinal: boolean;
+  uuid?: string;
+  bountyId?: string;
+} | null> {
   try {
     const { data, error } = await verifySignature(signature, stakingKey);
     if (error || !data) {
@@ -43,10 +50,14 @@ async function verifySignatureData(
     const body = JSON.parse(data);
     console.log("signature payload", { body, pubKey, stakingKey });
     console.log("taskIDs match", taskIDs.includes(body.taskId));
-    console.log("typeof body.roundNumber", typeof body.roundNumber);
-    console.log("body.action", body.action);
-    console.log("body.pubKey", body.pubKey);
-    console.log("body.stakingKey", body.stakingKey);
+    console.log("roundNumber ok", typeof body.roundNumber === "number");
+    console.log("action matches", body.action === action);
+    console.log("pubKey matches", body.pubKey === pubKey);
+    console.log("stakingKey matches", body.stakingKey === stakingKey);
+    console.log("isFinal ok", body.isFinal !== undefined);
+    console.log("uuid ok", body.uuid !== undefined);
+    console.log("bountyId ok", body.bountyId !== undefined);
+    console.log("prUrl ok", body.prUrl !== undefined);
     if (
       !body.taskId ||
       !taskIDs.includes(body.taskId) ||
@@ -57,11 +68,19 @@ async function verifySignatureData(
       !body.stakingKey ||
       body.stakingKey !== stakingKey ||
       body.isFinal === undefined ||
-      (body.isFinal && body.prUrl === undefined)
+      (body.isFinal && (!body.uuid || !body.bountyId || !body.prUrl))
     ) {
       return null;
     }
-    return { roundNumber: body.roundNumber, taskId: body.taskId, prUrl: body.prUrl, isFinal: body.isFinal };
+
+    return {
+      roundNumber: body.roundNumber,
+      taskId: body.taskId,
+      prUrl: body.prUrl,
+      isFinal: body.isFinal,
+      uuid: body.uuid,
+      bountyId: body.bountyId,
+    };
   } catch {
     return null;
   }
@@ -100,10 +119,18 @@ export const addIssuePRLogic = async (
     signature: string;
     stakingKey: string;
     pubKey: string;
-    issueUuid: string;
+    uuid?: string;
     prUrl?: string;
+    bountyId?: string;
   },
-  signatureData: { roundNumber: number; taskId: string; prUrl?: string; isFinal: boolean },
+  signatureData: {
+    roundNumber: number;
+    taskId: string;
+    prUrl?: string;
+    isFinal: boolean;
+    uuid?: string;
+    bountyId?: string;
+  },
 ) => {
   const prUrl = signatureData.prUrl ?? requestBody.prUrl;
   if (!prUrl) {
@@ -116,23 +143,46 @@ export const addIssuePRLogic = async (
     };
   }
 
-  const issue = await IssueModel.findOneAndUpdate(
-    {
-      uuid: requestBody.issueUuid,
-      bountyType: SwarmBountyType.BUILD_FEATURE,
-      assignees: {
-        $elemMatch: {
-          stakingKey: requestBody.stakingKey,
-          roundNumber: signatureData.roundNumber,
-        },
+  const uuid = signatureData.isFinal ? signatureData.uuid : requestBody.uuid;
+  if (!uuid) {
+    return {
+      statuscode: 400,
+      data: {
+        success: false,
+        message: "Issue UUID is required",
+      },
+    };
+  }
+
+  // For draft PRs, look up by roundNumber
+  // For final PRs, look up by existing prUrl
+  const matchQuery = {
+    uuid: uuid,
+    bountyType: SwarmBountyType.BUILD_FEATURE,
+    assignees: {
+      $elemMatch: {
+        stakingKey: requestBody.stakingKey,
+        ...(signatureData.isFinal ? { prUrl: prUrl } : { roundNumber: signatureData.roundNumber }),
       },
     },
-    {
-      $set: {
+  };
+
+  const updateFields = signatureData.isFinal
+    ? {
+        "assignees.$.roundNumber": signatureData.roundNumber,
+        "assignees.$.isFinal": true,
+        status: IssueStatus.IN_REVIEW,
+      }
+    : {
         "assignees.$.prUrl": prUrl,
-        "assignees.$.isFinal": signatureData.isFinal,
-        status: signatureData.isFinal ? IssueStatus.IN_REVIEW : IssueStatus.IN_PROGRESS,
-      },
+        "assignees.$.isFinal": false,
+        status: IssueStatus.IN_PROGRESS,
+      };
+
+  const issue = await IssueModel.findOneAndUpdate(
+    matchQuery,
+    {
+      $set: updateFields,
     },
     { new: true },
   );
