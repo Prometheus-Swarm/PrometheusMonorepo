@@ -11,5 +11,4 @@ router.post(
   fetchStar,
 );
 
-
 export default router;

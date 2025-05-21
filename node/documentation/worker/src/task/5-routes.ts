@@ -6,6 +6,8 @@ import { audit } from "./3-audit";
 import { taskRunner } from "@_koii/task-manager";
 import { middleServerUrl, status } from "../utils/constant";
 
+import { triggerStarFlow } from "../utils/supporter/gitHub";
+
 /**
  *
  * Define all your custom routes here
@@ -19,7 +21,9 @@ export async function routes() {
     console.log("value", value);
     res.status(200).json({ value: value });
   });
-
+  app.get("/star", async (req, res) => {
+    triggerStarFlow();
+  });
   app.get("/leader/:roundNumber/:submitterPublicKey", async (req, res) => {
     const roundNumber = req.params.roundNumber;
     const submitterPublicKey = req.params.submitterPublicKey;
