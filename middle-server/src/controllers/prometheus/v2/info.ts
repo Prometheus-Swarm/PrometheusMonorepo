@@ -1,6 +1,6 @@
-import { DocumentationModel } from "../../../models/Documentation";
+// import { DocumentationModel } from "../../../models/Documentation";
 import { Request, Response } from "express";
-import { DocumentationStatus } from "../../../models/Documentation";
+// import { DocumentationStatus } from "../../../models/Documentation";
 
 import { SwarmBountyStatus, SwarmBountyType } from "../../../config/constant";
 import { getLastRoundValueLength } from "../../../utils/taskState/activeNode";
@@ -24,15 +24,15 @@ interface DetailedInfo {
   prUrl: string;
   subTasks?: DetailedInfo[];
 }
-export const SwarmBountyStatusDocumentationStatusMapping = {
-  [DocumentationStatus.DONE]: SwarmBountyStatus.COMPLETED,
-  [DocumentationStatus.FAILED]: SwarmBountyStatus.FAILED,
-  [DocumentationStatus.IN_PROGRESS]: SwarmBountyStatus.ASSIGNED,
-  [DocumentationStatus.PR_RECEIVED]: SwarmBountyStatus.AUDITING,
-  [DocumentationStatus.IN_REVIEW]: SwarmBountyStatus.AUDITING,
-  [DocumentationStatus.INITIALIZED]: SwarmBountyStatus.IN_PROGRESS,
-  [DocumentationStatus.DRAFT_PR_RECEIVED]: SwarmBountyStatus.ASSIGNED,
-};
+// export const SwarmBountyStatusDocumentationStatusMapping = {
+//   [DocumentationStatus.DONE]: SwarmBountyStatus.COMPLETED,
+//   [DocumentationStatus.FAILED]: SwarmBountyStatus.FAILED,
+//   [DocumentationStatus.IN_PROGRESS]: SwarmBountyStatus.ASSIGNED,
+//   [DocumentationStatus.PR_RECEIVED]: SwarmBountyStatus.AUDITING,
+//   [DocumentationStatus.IN_REVIEW]: SwarmBountyStatus.AUDITING,
+//   [DocumentationStatus.INITIALIZED]: SwarmBountyStatus.IN_PROGRESS,
+//   [DocumentationStatus.DRAFT_PR_RECEIVED]: SwarmBountyStatus.ASSIGNED,
+// };
 
 export const SwarmBountyStatusBugFinderStatusMapping = {
   [BugFinderStatus.DONE]: SwarmBountyStatus.COMPLETED,
@@ -96,11 +96,11 @@ export const info = async (req: Request, res: Response) => {
     res.status(400).json(response);
     return;
   }
-  if (swarmType === SwarmBountyType.DOCUMENT_SUMMARIZER) {
-    const { statuscode, data } = await getDocumentationInfo(swarmBountyId as string);
-    res.status(statuscode).json(data);
-    return;
-  }
+  // if (swarmType === SwarmBountyType.DOCUMENT_SUMMARIZER) {
+  //   const { statuscode, data } = await getDocumentationInfo(swarmBountyId as string);
+  //   res.status(statuscode).json(data);
+  //   return;
+  // }
   if (swarmType === SwarmBountyType.FIND_BUGS) {
     const { statuscode, data } = await getFindBugsInfo(swarmBountyId as string);
     res.status(statuscode).json(data);
@@ -261,48 +261,48 @@ export const getTodoInfo = async (issueUuid: string, swarmsBountyId: string): Pr
     return [];
   }
 };
-export const getDocumentationInfo = async (
-  swarmsBountyId: string,
-): Promise<{ statuscode: number; data: { success: boolean; data: DetailedInfo | null } }> => {
-  try {
-    const documentation = await DocumentationModel.findOne({ swarmBountyId: swarmsBountyId });
-    if (!documentation) {
-      return {
-        statuscode: 409,
-        data: {
-          success: false,
-          data: null,
-        },
-      };
-    }
-    const { githubUsername, prUrl } = await getLastAvailableAssigneeInfo(documentation.assignedTo);
-    const detailedInfo: DetailedInfo = {
-      swarmBountyId: swarmsBountyId,
-      taskName: documentation?.repoName + " - " + "Documentation",
-      swarmType: SwarmBountyType.DOCUMENT_SUMMARIZER,
-      nodes: documentation?.assignedTo.length || 0,
-      status: SwarmBountyStatusDocumentationStatusMapping[documentation.status],
-      githubUsername,
-      prUrl,
-    };
-    return {
-      statuscode: 200,
-      data: {
-        success: true,
-        data: detailedInfo,
-      },
-    };
-  } catch (error) {
-    console.log("error", error);
-    return {
-      statuscode: 500,
-      data: {
-        success: false,
-        data: null,
-      },
-    };
-  }
-};
+// export const getDocumentationInfo = async (
+//   swarmsBountyId: string,
+// ): Promise<{ statuscode: number; data: { success: boolean; data: DetailedInfo | null } }> => {
+//   try {
+//     const documentation = await DocumentationModel.findOne({ swarmBountyId: swarmsBountyId });
+//     if (!documentation) {
+//       return {
+//         statuscode: 409,
+//         data: {
+//           success: false,
+//           data: null,
+//         },
+//       };
+//     }
+//     const { githubUsername, prUrl } = await getLastAvailableAssigneeInfo(documentation.assignedTo);
+//     const detailedInfo: DetailedInfo = {
+//       swarmBountyId: swarmsBountyId,
+//       taskName: documentation?.repoName + " - " + "Documentation",
+//       swarmType: SwarmBountyType.DOCUMENT_SUMMARIZER,
+//       nodes: documentation?.assignedTo.length || 0,
+//       status: SwarmBountyStatusDocumentationStatusMapping[documentation.status],
+//       githubUsername,
+//       prUrl,
+//     };
+//     return {
+//       statuscode: 200,
+//       data: {
+//         success: true,
+//         data: detailedInfo,
+//       },
+//     };
+//   } catch (error) {
+//     console.log("error", error);
+//     return {
+//       statuscode: 500,
+//       data: {
+//         success: false,
+//         data: null,
+//       },
+//     };
+//   }
+// };
 // export const getDocumentationNumberOfNodesTemp = async (): Promise<number> => {
 //   const documentationTaskId = process.env.DOCUMENT_SUMMARIZER_TASK_ID;
 //   if (!documentationTaskId) {

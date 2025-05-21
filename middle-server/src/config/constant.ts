@@ -9,7 +9,7 @@ export const defaultBountyMarkdownFile =
   "https://raw.githubusercontent.com/HermanL02/prometheus-swarm-bounties/master/README.md";
 export const plannerTaskID = process.env.PLANNER_TASK_ID || "";
 
-import { DocumentationStatus } from "../models/Documentation";
+// import { DocumentationStatus } from "../models/Documentation";
 export enum SwarmBountyStatus {
   // PENDING = "pending",
   ASSIGNED = "assigned",
