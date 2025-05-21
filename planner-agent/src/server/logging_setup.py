@@ -8,8 +8,8 @@ from prometheus_swarm.utils.logging import set_conversation_hook, swarm_bounty_i
 
 def setup_remote_logging():
     """Set up remote logging hooks."""
+    print("Setting up remote logging")
     remote_url = os.getenv("MIDDLE_SERVER_URL")
-    api_key = os.getenv("REMOTE_LOGGING_API_KEY")
 
     if not remote_url:
         return
@@ -21,10 +21,6 @@ def setup_remote_logging():
             return
 
         try:
-            headers = {}
-            if api_key:
-                headers["Authorization"] = f"Bearer {api_key}"
-
             # Extract tool names if there are tool calls
             tools = []
             if isinstance(content, list):
@@ -56,9 +52,8 @@ def setup_remote_logging():
                     data["bounty_id"] = bounty_id
 
                 response = requests.post(
-                    f"{remote_url.rstrip('/')}/conversations",
+                    f"{remote_url}/api/builder/record-message",
                     json=data,
-                    headers=headers,
                     timeout=5,  # 5 second timeout
                 )
                 response.raise_for_status()
