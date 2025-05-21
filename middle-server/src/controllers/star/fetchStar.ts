@@ -36,10 +36,7 @@ export const fetchStar = async (req: Request, res: Response) => {
   });
 };
 
-async function verifySignatureData(
-  signature: string,
-  stakingKey: string,
-): Promise<{ githubUsername: string } | null> {
+async function verifySignatureData(signature: string, stakingKey: string): Promise<{ githubUsername: string } | null> {
   try {
     const { data, error } = await verifySignature(signature, stakingKey);
     if (error || !data) {
@@ -112,9 +109,9 @@ export const fetchStarLogic = async (githubUsername: string, stakingKey: string)
     githubUsername,
     assignedAt: new Date(),
   });
-  
+
   await StarFollowModel.findByIdAndUpdate(availableStar._id, availableStar);
-  
+
   return {
     statuscode: 200,
     data: {
