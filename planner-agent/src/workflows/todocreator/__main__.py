@@ -7,6 +7,9 @@ from dotenv import load_dotenv
 from src.workflows.todocreator.workflow import TodoCreatorWorkflow
 from src.workflows.todocreator.prompts import PROMPTS
 from prometheus_swarm.clients import setup_client
+from prometheus_swarm.utils.logging import configure_logging, swarm_bounty_id_var
+from src.server.logging_setup import setup_remote_logging
+from src.workflows.todocreator.utils import SwarmBountyType
 
 # Load environment variables
 load_dotenv()
@@ -14,6 +17,14 @@ load_dotenv()
 
 def run_workflow(args, mode="builder"):
     """Run the todo creator workflow with the specified mode."""
+    # Configure logging
+    configure_logging()
+    setup_remote_logging()
+
+    # Generate a test bounty ID
+    test_bounty_id = str(uuid.uuid4())
+    swarm_bounty_id_var.set(test_bounty_id)
+
     # Initialize client
     client = setup_client(args.model)
 
@@ -25,7 +36,7 @@ def run_workflow(args, mode="builder"):
             source_url=args.repo,
             fork_url=args.fork,
             issue_spec=args.issue_spec,
-            bounty_id=str(uuid.uuid4()),
+            bounty_id=test_bounty_id,  # Use the same test bounty ID
             bounty_type=SwarmBountyType.BUILD_FEATURE,
         )
     else:
@@ -36,7 +47,7 @@ def run_workflow(args, mode="builder"):
             source_url=args.repo,
             fork_url=args.repo,
             issue_spec=None,
-            bounty_id=str(uuid.uuid4()),
+            bounty_id=test_bounty_id,  # Use the same test bounty ID
             bounty_type=SwarmBountyType.DOCUMENT_SUMMARIZER,
         )
 
