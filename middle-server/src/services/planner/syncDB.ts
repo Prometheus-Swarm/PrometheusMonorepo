@@ -44,6 +44,7 @@ export async function syncDB() {
         forkUrl: forkUrl,
         issueSpec: bounty.description,
         bountyId: bountyId,
+        bountyType: SwarmBountyType.BUILD_FEATURE,
       });
       if (response.statuscode < 200 || response.statuscode >= 300) {
         await sendMessageToSlack(
