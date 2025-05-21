@@ -11,7 +11,7 @@ from prometheus_swarm.database import initialize_database
 from colorama import Fore, Style
 import uuid
 import os
-from .logging_setup import setup_remote_logging
+from src.server.logging_setup import setup_remote_logging
 
 
 def create_app():
@@ -74,5 +74,8 @@ def create_app():
         log_key_value("Workers", 1)
         log_key_value("Host", "0.0.0.0:8080")
         log_key_value("Database", os.getenv("DATABASE_PATH", "Not configured"))
+        log_key_value(
+            "Remote Logging", os.getenv("MIDDLE_SERVER_URL", "Not configured")
+        )
 
     return app
