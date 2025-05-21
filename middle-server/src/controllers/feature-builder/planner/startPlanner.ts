@@ -1,10 +1,12 @@
 import { Request, Response } from "express";
+import { SwarmBountyType } from "../../../config/constant";
 
 interface PlannerRequestBody {
   sourceUrl: string;
   forkUrl: string;
-  issueSpec: string;
+  issueSpec?: string | null;
   bountyId: string;
+  bountyType: SwarmBountyType;
 }
 
 export const planner = async (req: Request, res: Response) => {

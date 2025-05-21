@@ -2,7 +2,7 @@ import { prop, getModelForClass, modelOptions, Severity } from "@typegoose/typeg
 import { builder247DB } from "../services/database/database";
 import { SwarmBountyType } from "../config/constant";
 
-enum DocumentationStatus {
+export enum DocumentationStatus {
   INITIALIZED = "initialized",
   IN_PROGRESS = "in_progress",
   DRAFT_PR_RECEIVED = "draft_pr_received",

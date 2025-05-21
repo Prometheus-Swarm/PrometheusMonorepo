@@ -1,4 +1,4 @@
-from .implementations import (
+from src.workflows.todocreator.tools.planner_operations.implementations import (
     generate_tasks,
     validate_tasks,
     regenerate_tasks,
@@ -25,7 +25,7 @@ DEFINITIONS = {
                             "title": {
                                 "type": "string",
                                 "description": "Clear, specific title of the task",
-                                "maxLength": 100,
+                                "maxLength": 1000,
                             },
                             "description": {
                                 "type": "string",
