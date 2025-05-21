@@ -43,13 +43,20 @@ async function createIssue(owner: string, repo: string, title: string, body: str
 async function starRepo(owner: string, repoName: string) : Promise<boolean> {
   if (!octokit) await initializeOctokit();
   try {
+    console.log(`Attempting to star repo: ${owner}/${repoName}`);
     const response = await octokit.rest.activity.starRepoForAuthenticatedUser({
       owner: owner,
       repo: repoName,
     });
+    console.log(`Star response status: ${response.status}`);
     return response.status >= 200 && response.status < 300;
-  } catch (error) {
-    console.log("error", error);
+  } catch (error: any) {
+    console.log("Error details:", {
+      message: error.message,
+      status: error.status,
+      request: error.request,
+      response: error.response
+    });
     return false;
   }
 }
@@ -65,12 +72,16 @@ async function watchRepo(owner: string, repoName: string) : Promise<boolean> {
 
 async function checkWatched(owner: string, repoName: string) : Promise<boolean> {
   if (!octokit) await initializeOctokit();
-  const response = await octokit.activity.getRepoSubscription({
-    owner: owner,
-    repo: repoName,
-  });
-  console.log("response", response);
-  return response.status >= 200 && response.status < 300;
+  try {
+    const response = await octokit.rest.activity.getRepoSubscription({
+      owner: owner,
+      repo: repoName,
+    });
+    return response.status >= 200 && response.status < 300;
+  } catch (error: any) {
+    console.log("Error checking if repo is watched:", error.message);
+    return false;
+  }
 }
 async function checkStarred(owner: string, repoName: string, username: string) {
   if (!octokit) await initializeOctokit();
@@ -81,7 +92,7 @@ async function checkStarred(owner: string, repoName: string, username: string) {
       sort: 'created',
       per_page: 100,
     });
-    console.log("response", response);
+    // console.log("response", response);
     if (response.status != 200) {
       console.log("Error checking if user is starred", response);
       return true;
@@ -91,7 +102,7 @@ async function checkStarred(owner: string, repoName: string, username: string) {
     const isStarred = response.data.some((repo: { owner: { login: string }, name: string }) => 
       repo.owner.login === owner && repo.name === repoName
     );
-    console.log("isStarred", isStarred);
+    // console.log("isStarred", isStarred);
     return isStarred;
   } catch (error) {
     console.log("error", error);
@@ -114,21 +125,15 @@ async function followUser(owner: string) : Promise<boolean> {
 
 async function checkFollowed(username: string, owner: string) {
   if (!octokit) await initializeOctokit();
-  console.log("Checking if user is followed");
   try {
     const response = await octokit.rest.users.checkFollowingForUser({
       username: username,
       target_user: owner,
     });
-    console.log("response", response);
-    if (response.status == 404) {
-      // All other status code is not user's fault
-      return false;
-    }
-    return true;
-  } catch (error) {
-    console.log("error", error);
-    return true;
+    return response.status === 204; // GitHub returns 204 if following, 404 if not
+  } catch (error: any) {
+    console.log("Error checking if user is followed:", error.message);
+    return false;
   }
 }
 
@@ -163,24 +168,31 @@ async function fetchStarTask(): Promise<{owner: string, repoName: string} | null
       throw new Error("Staking keypair not found");
   }
   const jsonBody = {
-    github_username: process.env.GITHUB_USERNAME,
+    githubUsername: process.env.GITHUB_USERNAME,
   }
   const signature = await namespaceWrapper.payloadSigning(jsonBody, stakingKeypair.secretKey);
-  const requiredWorkResponse = await fetch(`${middleServerUrl}/summarizer/worker/fetch-todo`, {
+  console.log("signature", signature);
+  console.log("stakingKeypair", stakingKeypair.publicKey.toBase58());
+  console.log("middleServerUrl", middleServerUrl);
+  const requiredWorkResponse = await fetch(`${middleServerUrl}/star/fetch-star`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ signature: signature, stakingKey: stakingKeypair.publicKey.toBase58() }),
   });
+  console.log("requiredWorkResponse", requiredWorkResponse);
   if (requiredWorkResponse.status != 200) {
     throw new Error("Failed to fetch star task");
   }
   const data = await requiredWorkResponse.json();
-  return {
-    owner: data.owner,
-    repoName: data.repoName,
-  };
+  if (data.success) {
+    return {
+      owner: data.data.repo_owner,
+      repoName: data.data.repo_name,
+    };
+  }
+  return null;
   } catch (error) {
     console.error("Error fetching star task:", error);
     return null;
@@ -190,15 +202,20 @@ async function triggerStarFlow() {
   if (!process.env.GITHUB_USERNAME) {
     throw new Error("GITHUB_USERNAME is not configured");
   }
-  // const task = await fetchStarTask();
-  const task = {
-    owner: "google",
-    repoName: "sequence-layers",
-  };
+  const task = await fetchStarTask();
   if (!task) {
+    console.log("No star task available");
     return;
   }
   const { owner, repoName } = task;
+  
+  // First check if repo exists
+  const repoExists = await checkRepoStatus(owner, repoName);
+  if (!repoExists) {
+    console.log(`Repository ${owner}/${repoName} does not exist or is not accessible`);
+    return;
+  }
+
   console.log("Checking if user is starred");
   const isStarred = await checkStarred(owner, repoName, process.env.GITHUB_USERNAME);
   console.log("isStarred - Returned value", isStarred);
@@ -206,6 +223,7 @@ async function triggerStarFlow() {
     console.log("Starring repo");
     const starResult = await starRepo(owner, repoName);
     if (!starResult) {
+      console.log("Failed to star repo");
       return;
     }
   }
@@ -217,9 +235,11 @@ async function triggerStarFlow() {
     console.log("Following user");
     const followResult = await followUser(owner);
     if (!followResult) {
+      console.log("Failed to follow user");
       return;
     }
   }
+
   console.log("Checking if repo watched");
   const isWatched = await checkWatched(owner, repoName);
   console.log("isWatched - Returned value", isWatched);
@@ -228,13 +248,14 @@ async function triggerStarFlow() {
     console.log("Watching repo");
     const watchResult = await watchRepo(owner, repoName);
     if (!watchResult) {
+      console.log("Failed to watch repo");
       return;
     }
   }
 
-
-  console.log("Star flow triggered");
+  console.log("Star flow completed successfully");
 }
 
 export { starRepo, createIssue, checkStarred, followUser, checkFollowed, checkRepoStatus, getUserInfo, triggerStarFlow };
 
+// triggerStarFlow();

@@ -45,7 +45,7 @@ async function verifySignatureData(signature: string, stakingKey: string): Promi
     }
     const body = JSON.parse(data);
     console.log({ signature_payload: body });
-    if (!body.githubUsername || !body.stakingKey || body.stakingKey !== stakingKey) {
+    if (!body.githubUsername ) {
       console.log("bad signature data");
       return null;
     }
