@@ -25,7 +25,7 @@ DEFINITIONS = {
                             "title": {
                                 "type": "string",
                                 "description": "Clear, specific title of the task",
-                                "maxLength": 100,
+                                "maxLength": 1000,
                             },
                             "description": {
                                 "type": "string",
