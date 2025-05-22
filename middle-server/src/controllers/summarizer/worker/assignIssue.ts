@@ -32,7 +32,7 @@ export const assignIssueLogic = async () => {
   const stuckIssue = await IssueModel.findOneAndUpdate(
     {
       status: IssueStatus.AGGREGATOR_PENDING,
-      bountyType: SwarmBountyType.BUILD_FEATURE,
+      bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER,
       updatedAt: { $lt: new Date(Date.now() - AGGREGATOR_TIMEOUT) },
     },
     { $set: { status: IssueStatus.INITIALIZED } },
@@ -46,7 +46,7 @@ export const assignIssueLogic = async () => {
   // Find all issues in initialized status, sorted by creation date
   const issues = await IssueModel.find({
     status: IssueStatus.INITIALIZED,
-    bountyType: SwarmBountyType.BUILD_FEATURE,
+    bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER,
   }).sort({ createdAt: 1 });
 
   if (!issues || issues.length === 0) {
@@ -73,7 +73,7 @@ export const assignIssueLogic = async () => {
     // If issue has no predecessor, it can be assigned
     if (!issue.predecessorUuid) {
       const result = await IssueModel.findOneAndUpdate(
-        { uuid: issue.uuid, bountyType: SwarmBountyType.BUILD_FEATURE },
+        { uuid: issue.uuid, bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER },
         { $set: { status: IssueStatus.AGGREGATOR_PENDING } },
         { new: true },
       );
@@ -100,7 +100,7 @@ export const assignIssueLogic = async () => {
     // Check if predecessor is approved
     const predecessor = await IssueModel.findOne({
       uuid: issue.predecessorUuid,
-      bountyType: SwarmBountyType.BUILD_FEATURE,
+      bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER,
     });
     if (!predecessor) {
       console.error(`Predecessor issue ${issue.predecessorUuid} not found`);
@@ -109,7 +109,7 @@ export const assignIssueLogic = async () => {
 
     if (predecessor.status === IssueStatus.APPROVED) {
       const result = await IssueModel.findOneAndUpdate(
-        { uuid: issue.uuid, bountyType: SwarmBountyType.BUILD_FEATURE },
+        { uuid: issue.uuid, bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER },
         { $set: { status: IssueStatus.AGGREGATOR_PENDING } },
         { new: true },
       );

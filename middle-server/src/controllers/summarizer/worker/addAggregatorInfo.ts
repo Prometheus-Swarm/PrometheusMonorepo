@@ -118,7 +118,7 @@ export const addAggregatorInfoLogic = async (signatureData: {
   const issue = await IssueModel.findOneAndUpdate(
     {
       uuid: signatureData.issueUuid,
-      bountyType: SwarmBountyType.BUILD_FEATURE,
+      bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER,
     },
     {
       $set: {
