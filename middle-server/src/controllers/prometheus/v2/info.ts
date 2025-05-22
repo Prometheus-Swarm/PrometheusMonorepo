@@ -53,10 +53,10 @@ export const SwarmBountyStatusSpecStatusMapping = {
 export const SwarmBountyStatusIssueStatusMapping = {
   // [IssueStatus.INITIALIZED]: SwarmBountyStatus.PENDING,
   [IssueStatus.INITIALIZED]: SwarmBountyStatus.IN_PROGRESS,
-  [IssueStatus.AGGREGATOR_PENDING]: SwarmBountyStatus.ASSIGNED,
+  [IssueStatus.AGGREGATOR_PENDING]: SwarmBountyStatus.IN_PROGRESS,
   [IssueStatus.IN_PROGRESS]: SwarmBountyStatus.IN_PROGRESS,
   [IssueStatus.ASSIGN_PENDING]: SwarmBountyStatus.IN_PROGRESS,
-  [IssueStatus.ASSIGNED]: SwarmBountyStatus.IN_PROGRESS,
+  [IssueStatus.ASSIGNED]: SwarmBountyStatus.ASSIGNED,
   [IssueStatus.IN_REVIEW]: SwarmBountyStatus.AUDITING,
   // [IssueStatus.APPROVED]: SwarmBountyStatus.APPROVED,
   [IssueStatus.APPROVED]: SwarmBountyStatus.AUDITING,
