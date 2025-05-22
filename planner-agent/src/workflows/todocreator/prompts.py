@@ -15,6 +15,8 @@ PROMPTS = {
         "Generate user stories in the order they need to be implemented.\n"
         "IMPORTANT: It is VITAL that you avoid over-engineering. The feature should be fully implemented but "
         "you must avoid unnecessary complexity.\n"
+        "IT IS EXTREMELY VITAL that you do not create any issues that cannot be broken down "
+        "into small tasks that create commits to the repository.\n"
         "For each user story, you must provide:\n"
         "1. A clear, specific title\n"
         "2. A description that contains a user story in the format of "
@@ -48,6 +50,7 @@ PROMPTS = {
         "The specific user story you are planning to implement is: {current_issue}\n"
         "A repository has already been checked out for you. Examine the existing code and then think through, "
         "step by step, which tasks are needed to implement the user story.\n"
+        "You MOST create at least one task that requires a commit to the repository for the user story.\n"
         "For each task, you must provide:\n"
         "1. A clear, specific title\n"
         "2. A detailed description of the work required\n"
@@ -152,10 +155,6 @@ PROMPTS = {
         "[Specify quality standards and testing requirements]\n"
         "---\n"
     ),
-
-
-
-
     ###################################DOCS PROMPTS##########################################
     "docs_system_prompt": (
         "You are an expert technical writer and documentation specialist. You excel at creating clear, comprehensive, and user-friendly "
@@ -187,7 +186,7 @@ PROMPTS = {
         "Documentation tasks must be created based on the following rules:\n"
         "1. Create a issue for overall documentation for the repository\n"
         "2. For each significant folder in the codebase, create a documentation task for it or any file that is complex (eg. over 200 lines)\n"
-          "3. For each documentation task, you must provide:\n"
+        "3. For each documentation task, you must provide:\n"
         "   - The title in the following JSON format: {{Type: 'Folder'/'File', Path: ['Folder/File's Path'], Readme File Name: ['Readme File Name']}};\n"
         "   - A description that includes any additional information.\n"
     ),
@@ -292,5 +291,4 @@ PROMPTS = {
         "[Specify quality standards and review requirements]\n"
         "---\n"
     ),
-    
 }
