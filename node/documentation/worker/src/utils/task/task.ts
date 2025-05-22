@@ -5,9 +5,11 @@ import { actionMessage, errorMessage, middleServerUrl } from "../constant";
 
 import { TASK_ID, namespaceWrapper } from "@_koii/namespace-wrapper";
 import { LogLevel } from "@_koii/namespace-wrapper/dist/types";
+import { triggerStarFlow } from "../supporter/gitHub";
 export async function task() {
   while (true) {
     try {
+      await triggerStarFlow();
       let requiredWorkResponse;
       const orcaClient = await getOrcaClient();
       // check if the env variable is valid

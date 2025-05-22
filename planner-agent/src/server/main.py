@@ -8,7 +8,7 @@ from src.workflows.todocreator.prompts import PROMPTS
 from prometheus_swarm.utils.logging import log_error
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor
-
+from prometheus_swarm.workflows.todocreator.utils import SwarmBountyType
 # from src.workflows.audit.workflow import AuditWorkflow
 # from src.workflows.audit.prompts import PROMPTS as AUDIT_PROMPTS
 
@@ -58,7 +58,7 @@ def audit_issues_and_tasks(future):
     pass
 
 
-def create_todos(source_url: str, fork_url: str, issue_spec: dict, bounty_id: str):
+def create_todos(source_url: str, fork_url: str, issue_spec: dict, bounty_id: str, bounty_type: SwarmBountyType):
     """Run the workflow in a background thread"""
     try:
         workflow = TodoCreatorWorkflow(
@@ -68,6 +68,7 @@ def create_todos(source_url: str, fork_url: str, issue_spec: dict, bounty_id: st
             fork_url=fork_url,
             issue_spec=issue_spec,
             bounty_id=bounty_id,
+            bounty_type=SwarmBountyType.BUILD_FEATURE,
         )
         result = workflow.run()
         if not result or not result.get("success"):
@@ -112,6 +113,7 @@ def create_plan():
             fork_url=data["forkUrl"],
             issue_spec=data["issueSpec"],
             bounty_id=data["bountyId"],
+            bounty_type=data["bountyType"],
         )
         future.add_done_callback(audit_issues_and_tasks)
 

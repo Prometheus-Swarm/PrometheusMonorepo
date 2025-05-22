@@ -1,8 +1,15 @@
 import { SwarmBountyStatus } from "../../config/constant";
 import { BountyResponse } from "../../types/bounty";
 
-export async function getSwarmBounty(): Promise<BountyResponse | null> {
-  const endpoint = `${process.env.PROMETHEUS_SERVER_URL}/api/v1/bounty?status=${SwarmBountyStatus.IN_PROGRESS}`;
+export async function getSwarmBounty(
+  status: SwarmBountyStatus | null = SwarmBountyStatus.IN_PROGRESS,
+): Promise<BountyResponse | null> {
+  let endpoint = "";
+  if (!status) {
+    endpoint = `${process.env.PROMETHEUS_SERVER_URL}/api/v1/bounty`;
+  } else {
+    endpoint = `${process.env.PROMETHEUS_SERVER_URL}/api/v1/bounty?status=${status}`;
+  }
   const response = await fetch(endpoint, {
     headers: {
       Authorization: `Bearer ${process.env.PROMETHEUS_SERVER_X_API_KEY || ""}`,

@@ -1,4 +1,4 @@
-import { DocumentationModel, DocumentationStatus } from "../../../models/Documentation";
+import { TodoModel, DocumentationStatus } from "../../../models/Todo";
 
 import { Request, Response } from "express";
 import { verifySignature } from "../../../utils/sign";
@@ -52,13 +52,13 @@ async function verifySignatureData(
 }
 async function updateTaskStatus(stakingKey: string, signature: string, swarmBountyId: string): Promise<boolean> {
   console.log("updateAssignedInfoWithIPFS", { stakingKey, signature, swarmBountyId });
-  const result = await DocumentationModel.findOneAndUpdate(
+  const result = await TodoModel.findOneAndUpdate(
     {
       assignedTo: {
         $elemMatch: {
           taskId: documentSummarizerTaskID,
           stakingKey: stakingKey,
-          swarmBountyId: swarmBountyId,
+          bountyId: swarmBountyId,
         },
       },
     },
