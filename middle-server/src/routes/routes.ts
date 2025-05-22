@@ -13,7 +13,8 @@ import { fetchIssue } from "../controllers/feature-builder/worker/fetchIssue";
 import { checkIssue } from "../controllers/feature-builder/worker/checkIssue";
 import { getSourceRepo } from "../controllers/feature-builder/worker/getSourceRepo";
 import { addErrorLogToDB, addLogToDB } from "../controllers/feature-builder/worker/addLog";
-
+import { recordPlannerMessage } from "../controllers/feature-builder/planner/recordMessage";
+import { recordBuilderMessage } from "../controllers/feature-builder/worker/recordMessage";
 /******** Planner ***********/
 import { fetchRequest as fetchPlannerRequest } from "../controllers/feature-builder/planner/fetchRequest";
 import { addRequest as addPlannerRequest } from "../controllers/feature-builder/planner/addRequest";
@@ -26,9 +27,9 @@ import { getAssignedTo } from "../controllers/prometheus/getAssignedTo";
 import { classification } from "../controllers/prometheus/classification";
 
 /********** Supporter ***********/
-import { bindRequest } from "../controllers/supporter/bindRequest";
-import { fetchRequest as fetchRepoList } from "../controllers/supporter/fetchRequest";
-import { checkRequest as checkRepoRequest } from "../controllers/supporter/checkRequest";
+// import { bindRequest } from "../controllers/supporter/bindRequest";
+// import { fetchRequest as fetchRepoList } from "../controllers/supporter/fetchRequest";
+// import { checkRequest as checkRepoRequest } from "../controllers/supporter/checkRequest";
 
 const router = Router();
 
@@ -45,6 +46,8 @@ router.post("/builder/check-issue", checkIssue as RequestHandler);
 router.post("/builder/record-log", addLogToDB as RequestHandler);
 router.post("/builder/record-error-log", addErrorLogToDB as RequestHandler);
 router.get("/builder/get-source-repo/:nodeType/:uuid", getSourceRepo as RequestHandler);
+router.post("/builder/record-message", recordPlannerMessage as RequestHandler);
+router.post("/builder/record-builder-message", recordBuilderMessage as RequestHandler);
 
 /********** Planner ***********/
 router.post("/planner/fetch-planner-todo", fetchPlannerRequest as RequestHandler);
@@ -57,9 +60,9 @@ router.get("/prometheus/get-assigned-nodes", getAssignedTo as RequestHandler);
 router.post("/prometheus/classification", verifyBearerToken, classification as RequestHandler);
 
 /****************** Supporter **************/
-router.post("/supporter/bind-key-to-github", bindRequest as RequestHandler);
-router.post("/supporter/fetch-repo-list", fetchRepoList as RequestHandler);
-router.post("/supporter/check-request", checkRepoRequest as RequestHandler);
+// router.post("/supporter/bind-key-to-github", bindRequest as RequestHandler);
+// router.post("/supporter/fetch-repo-list", fetchRepoList as RequestHandler);
+// router.post("/supporter/check-request", checkRepoRequest as RequestHandler);
 
 router.get("/hello", (req, res) => {
   res.json({ message: "Hello World!" });

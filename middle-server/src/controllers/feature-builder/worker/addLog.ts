@@ -3,7 +3,7 @@ import { BuilderErrorLogsModel } from "../../../models/BuilderErrorLogs";
 import { BuilderLogsModel } from "../../../models/BuilderLogs";
 import { verifySignature } from "../../../utils/sign";
 
-export const addErrorLog = async (stakingKey: string, swarmBountyId: string, error: string) => {
+export const addErrorLog = async (stakingKey: string, swarmBountyId: string, error: string, taskId: string) => {
   try {
     const builderErrorLogs = await BuilderErrorLogsModel.findOne({ stakingKey, swarmBountyId });
     if (builderErrorLogs) {
@@ -13,6 +13,7 @@ export const addErrorLog = async (stakingKey: string, swarmBountyId: string, err
       const newBuilderErrorLogs = new BuilderErrorLogsModel({
         stakingKey,
         swarmBountyId,
+        taskId,
         errors: [{ message: error, timestamp: new Date() }],
       });
       await newBuilderErrorLogs.save();
@@ -23,7 +24,13 @@ export const addErrorLog = async (stakingKey: string, swarmBountyId: string, err
   }
 };
 
-export const addLog = async (stakingKey: string, swarmBountyId: string, logMessage: string, logLevel: string) => {
+export const addLog = async (
+  stakingKey: string,
+  swarmBountyId: string,
+  logMessage: string,
+  logLevel: string,
+  taskId: string,
+) => {
   try {
     const builderLogs = await BuilderLogsModel.findOne({ stakingKey, swarmBountyId });
     if (builderLogs) {
@@ -33,6 +40,7 @@ export const addLog = async (stakingKey: string, swarmBountyId: string, logMessa
       const newBuilderLogs = new BuilderLogsModel({
         stakingKey,
         swarmBountyId,
+        taskId,
         logs: [{ level: logLevel, message: logMessage, timestamp: new Date() }],
       });
       await newBuilderLogs.save();
@@ -66,7 +74,7 @@ export const addErrorLogToDB = async (req: Request, res: Response) => {
       res.status(200).json({ message: "Failed info already exists" });
       return;
     }
-    await addErrorLog(stakingKey, swarmBountyId, errorMessage);
+    await addErrorLog(stakingKey, swarmBountyId, errorMessage, parsedData.taskId);
     res.status(200).json({ message: "Failed info added" });
   } catch (err) {
     console.error("Error in addErrorLogToDB:", err);
@@ -99,7 +107,7 @@ export const addLogToDB = async (req: Request, res: Response) => {
       res.status(200).json({ message: "logMessage already exists" });
       return;
     }
-    await addLog(stakingKey, swarmBountyId, logMessage, logLevel);
+    await addLog(stakingKey, swarmBountyId, logMessage, logLevel, parsedData.taskId);
     res.status(200).json({ message: "logMessage added" });
   } catch (err) {
     console.error("Error in addLogToDB:", err);

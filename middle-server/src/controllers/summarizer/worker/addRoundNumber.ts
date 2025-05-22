@@ -1,4 +1,4 @@
-import { DocumentationModel, DocumentationStatus } from "../../../models/Documentation";
+import { TodoModel, DocumentationStatus } from "../../../models/Todo";
 
 import { Request, Response } from "express";
 import { verifySignature } from "../../../utils/sign";
@@ -75,7 +75,7 @@ export async function updateAssignedInfoRoundNumber(
     prUrl: prUrl,
     roundNumber: roundNumber,
   });
-  const result = await DocumentationModel.findOneAndUpdate(
+  const result = await TodoModel.findOneAndUpdate(
     {
       taskId: documentSummarizerTaskID,
       stakingKey: stakingKey,
@@ -107,7 +107,7 @@ export async function updateAssignedInfoRoundNumber(
       data: {
         success: true,
         message: "Round number added",
-        swarmBountyId: result?.swarmBountyId,
+        swarmBountyId: result?.bountyId,
       },
     };
   }
