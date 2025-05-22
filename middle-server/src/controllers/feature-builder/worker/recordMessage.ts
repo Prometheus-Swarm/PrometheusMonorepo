@@ -17,13 +17,7 @@ export const recordBuilderMessage = async (req: Request, res: Response): Promise
     const { bounty_id, content, tool, githubUsername, uuid, taskType, taskStage, prUrl } =
       req.body as RecordMessageRequest;
 
-    if (!bounty_id) {
-      res.status(400).json({
-        success: false,
-        message: "bounty_id is required",
-      });
-      return;
-    }
+    console.log("recordBuilderMessage", { bounty_id, content, tool, githubUsername, uuid, taskType, taskStage, prUrl });
 
     const conversation = await BuilderConversationModel.create({
       bounty_id,
