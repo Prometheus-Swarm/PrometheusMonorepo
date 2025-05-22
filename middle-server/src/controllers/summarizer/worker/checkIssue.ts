@@ -79,7 +79,7 @@ async function checkIssueAssignment(
   try {
     const result = await IssueModel.findOne({
       bountyId: bountyId,
-      bountyType: SwarmBountyType.BUILD_FEATURE,
+      bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER,
       assignees: {
         $elemMatch: {
           stakingKey: stakingKey,
@@ -98,7 +98,7 @@ async function checkIssueAssignment(
     // Get system prompt
     const systemPrompt = await SystemPromptModel.findOne({
       bountyId: result.bountyId,
-      bountyType: SwarmBountyType.BUILD_FEATURE,
+      bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER,
     })
       .select("prompt")
       .lean();
