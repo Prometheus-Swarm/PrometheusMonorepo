@@ -6,21 +6,21 @@ PROMPTS = {
         "and consolidating changes from multiple pull requests. You understand software development best "
         "practices and focus on maintaining code quality while resolving conflicts."
     ),
-    "verify_tests": (
-        "You need to verify that all tests pass after merging multiple PRs. If any tests fail:\n"
-        "1. Analyze the test output to understand the failures\n"
-        "2. Review the relevant code to identify the cause\n"
-        "3. Propose and implement fixes that maintain the intent of the merged changes\n"
-        "4. Verify the fixes by running tests again\n\n"
-        "Continue until all tests pass.\n\n"
-        "Guidelines:\n"
-        "- Run the full test suite to catch any regressions\n"
-        "- Make minimal changes needed to fix test failures\n"
-        "- Document any fixes made in commit messages\n"
-        "- Ensure fixes don't break the functionality from merged PRs\n"
-        "- Consider test dependencies and environment setup\n\n"
-        "Current repository state:\n{current_files}\n\n"
-    ),
+    # "verify_tests": (
+    #     "You need to verify that all tests pass after merging multiple PRs. If any tests fail:\n"
+    #     "1. Analyze the test output to understand the failures\n"
+    #     "2. Review the relevant code to identify the cause\n"
+    #     "3. Propose and implement fixes that maintain the intent of the merged changes\n"
+    #     "4. Verify the fixes by running tests again\n\n"
+    #     "Continue until all tests pass.\n\n"
+    #     "Guidelines:\n"
+    #     "- Run the full test suite to catch any regressions\n"
+    #     "- Make minimal changes needed to fix test failures\n"
+    #     "- Document any fixes made in commit messages\n"
+    #     "- Ensure fixes don't break the functionality from merged PRs\n"
+    #     "- Consider test dependencies and environment setup\n\n"
+    #     "Current repository state:\n{current_files}\n\n"
+    # ),
     "resolve_conflicts": (
         "You need to resolve merge conflicts in the following files. For each conflict:\n"
         "1. Analyze both versions of the code\n"

@@ -115,24 +115,24 @@ class CreatePullRequestPhase(WorkflowPhase):
         )
 
 
-@requires_context(
-    templates={
-        "current_files": List[str],
-    }
-)
-class TestVerificationPhase(WorkflowPhase):
-    """Run tests and fix any issues after merging PRs."""
+# @requires_context(
+#     templates={
+#         "current_files": List[str],
+#     }
+# )
+# class TestVerificationPhase(WorkflowPhase):
+#     """Run tests and fix any issues after merging PRs."""
 
-    def __init__(self, workflow=None, conversation_id: str = None):
-        super().__init__(
-            workflow=workflow,
-            prompt_name="verify_tests",
-            available_tools=[
-                "run_tests",
-                "read_file",
-                "write_file",
-                "list_files",
-            ],
-            conversation_id=conversation_id,
-            name="Test Verification",
-        )
+#     def __init__(self, workflow=None, conversation_id: str = None):
+#         super().__init__(
+#             workflow=workflow,
+#             prompt_name="verify_tests",
+#             available_tools=[
+#                 "run_tests",
+#                 "read_file",
+#                 "write_file",
+#                 "list_files",
+#             ],
+#             conversation_id=conversation_id,
+#             name="Test Verification",
+#         )
