@@ -7,7 +7,7 @@ interface RecordMessageRequest {
   tool?: string[];
 }
 
-export const recordMessage = async (req: Request, res: Response): Promise<void> => {
+export const recordPlannerMessage = async (req: Request, res: Response): Promise<void> => {
   try {
     const { bounty_id, content, tool } = req.body as RecordMessageRequest;
 
