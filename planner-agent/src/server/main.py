@@ -8,7 +8,7 @@ from src.workflows.todocreator.prompts import PROMPTS
 from prometheus_swarm.utils.logging import log_error
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor
-from prometheus_swarm.workflows.todocreator.utils import SwarmBountyType
+from src.workflows.todocreator.utils import SwarmBountyType
 
 # from src.workflows.audit.workflow import AuditWorkflow
 # from src.workflows.audit.prompts import PROMPTS as AUDIT_PROMPTS
