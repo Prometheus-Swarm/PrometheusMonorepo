@@ -3,7 +3,7 @@ import { BuilderErrorLogsModel } from "../../../models/BuilderErrorLogs";
 import { BuilderLogsModel } from "../../../models/BuilderLogs";
 import { verifySignature } from "../../../utils/sign";
 
-export const addErrorLog = async (stakingKey: string, swarmBountyId: string, error: string, taskId: string) => {
+export const addErrorLog = async (stakingKey: string, swarmBountyId: string, error: string) => {
   try {
     const builderErrorLogs = await BuilderErrorLogsModel.findOne({ stakingKey, swarmBountyId });
     if (builderErrorLogs) {
@@ -13,7 +13,6 @@ export const addErrorLog = async (stakingKey: string, swarmBountyId: string, err
       const newBuilderErrorLogs = new BuilderErrorLogsModel({
         stakingKey,
         swarmBountyId,
-        taskId,
         errors: [{ message: error, timestamp: new Date() }],
       });
       await newBuilderErrorLogs.save();
@@ -46,7 +45,7 @@ export const addLog = async (stakingKey: string, swarmBountyId: string, logMessa
 
 export const addErrorLogToDB = async (req: Request, res: Response) => {
   try {
-    const { stakingKey, swarmBountyId, error: errorMessage, signature, taskId } = req.body;
+    const { stakingKey, swarmBountyId, error: errorMessage, signature } = req.body;
 
     // Verify Signature
     const { data, error } = await verifySignature(signature, stakingKey);
@@ -67,7 +66,7 @@ export const addErrorLogToDB = async (req: Request, res: Response) => {
       res.status(200).json({ message: "Failed info already exists" });
       return;
     }
-    await addErrorLog(stakingKey, swarmBountyId, errorMessage, taskId);
+    await addErrorLog(stakingKey, swarmBountyId, errorMessage);
     res.status(200).json({ message: "Failed info added" });
   } catch (err) {
     console.error("Error in addErrorLogToDB:", err);
@@ -77,9 +76,9 @@ export const addErrorLogToDB = async (req: Request, res: Response) => {
 
 export const addLogToDB = async (req: Request, res: Response) => {
   try {
-    const { stakingKey, swarmBountyId, logMessage, logLevel, signature, taskId } = req.body;
+    const { stakingKey, swarmBountyId, logMessage, logLevel, signature } = req.body;
 
-    console.log("addLogToDB", { stakingKey, swarmBountyId, logMessage, logLevel, signature, taskId });
+    console.log("addLogToDB", { stakingKey, swarmBountyId, logMessage, logLevel, signature });
     // Verify Signature
     const { data, error } = await verifySignature(signature, stakingKey);
     if (error || !data) {
