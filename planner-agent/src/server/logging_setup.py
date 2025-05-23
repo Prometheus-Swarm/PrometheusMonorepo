@@ -22,6 +22,8 @@ def setup_remote_logging():
         if role != "assistant":
             return
 
+        print("Sending conversation message: Debug2")
+
         try:
             # Extract tool names if there are tool calls
             tools = []
@@ -29,7 +31,7 @@ def setup_remote_logging():
                 for block in content:
                     if isinstance(block, dict) and block.get("type") == "tool_call":
                         tools.append(block["tool_call"]["name"])
-
+            print("Debug2")
             # Only include content for text messages
             message = None
             if isinstance(content, str):
@@ -39,6 +41,7 @@ def setup_remote_logging():
                     if isinstance(block, dict) and block.get("type") == "text":
                         message = block["text"]
                         break
+            print("Debug3", message, tools)
 
             # Only send if we have either content or tools
             if message or tools:
@@ -53,13 +56,15 @@ def setup_remote_logging():
                 if bounty_id:
                     data["bounty_id"] = bounty_id
 
+                print("Sending conversation message to remote server")
                 response = requests.post(
                     f"{remote_url}/api/builder/record-message",
                     json=data,
                     timeout=5,  # 5 second timeout
                 )
                 response.raise_for_status()
-
+            else:
+                print("Debug4: No content or tools found in conversation message")
         except Exception as e:
             # Print but don't raise - we don't want to interrupt the main process
             print(f"Failed to send conversation to remote server: {e}")
