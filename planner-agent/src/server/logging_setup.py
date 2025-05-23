@@ -12,6 +12,7 @@ def setup_remote_logging():
     remote_url = os.getenv("MIDDLE_SERVER_URL")
 
     if not remote_url:
+        print("MIDDLE_SERVER_URL env not set, Skipping remote logging")
         return
 
     def conversation_hook(conversation_id: str, role: str, content: Any, model: str, context):
@@ -63,4 +64,5 @@ def setup_remote_logging():
             print(f"Failed to send conversation to remote server: {e}")
 
     # Register the hook
+    print("Setting conversation hook")
     set_conversation_hook(conversation_hook)
