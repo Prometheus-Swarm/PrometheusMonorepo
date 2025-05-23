@@ -65,7 +65,7 @@ router.post("/supporter/fetch-repo-list", fetchRepoList as RequestHandler);
 router.post("/supporter/check-request", checkRepoRequest as RequestHandler);
 
 router.get("/hello", (req, res) => {
-  res.json({ message: "Hello World!" });
+  res.json({ status: 200, message: "running" });
 });
 
 export default router;

@@ -11,6 +11,7 @@ export const recordPlannerMessage = async (req: Request, res: Response): Promise
   try {
     const { bounty_id, content, tool } = req.body as RecordMessageRequest;
 
+    console.log("recordPlannerMessage", req.body);
     if (!bounty_id) {
       res.status(400).json({
         success: false,
@@ -25,6 +26,7 @@ export const recordPlannerMessage = async (req: Request, res: Response): Promise
       tools: tool || [], // Map the 'tool' field from request to 'tools' in model
     });
 
+    console.log("recordedPlannerMessage", conversation);
     res.status(200).json({
       success: true,
       data: conversation,
