@@ -11,7 +11,6 @@ export const recordPlannerMessage = async (req: Request, res: Response): Promise
   try {
     const { bounty_id, content, tool } = req.body as RecordMessageRequest;
 
-    console.log("recordPlannerMessage", req.body);
     if (!bounty_id) {
       res.status(400).json({
         success: false,
