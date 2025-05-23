@@ -64,7 +64,7 @@ def create_todos(
     fork_url: str,
     issue_spec: dict,
     bounty_id: str,
-    bounty_type: SwarmBountyType,
+    # bounty_type: SwarmBountyType,
 ):
     """Run the workflow in a background thread"""
     try:
@@ -78,7 +78,7 @@ def create_todos(
             fork_url=fork_url,
             issue_spec=issue_spec,
             bounty_id=bounty_id,
-            bounty_type=bounty_type,
+            # bounty_type=bounty_type,
         )
         result = workflow.run()
         if not result or not result.get("success"):

@@ -14,7 +14,7 @@ def setup_remote_logging():
     if not remote_url:
         return
 
-    def conversation_hook(conversation_id: str, role: str, content: Any, model: str):
+    def conversation_hook(conversation_id: str, role: str, content: Any, model: str, context):
         """Send conversation messages to remote server."""
         # Only log assistant messages
         if role != "assistant":
