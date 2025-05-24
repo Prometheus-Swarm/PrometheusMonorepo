@@ -37,6 +37,7 @@ interface BuilderInfo {
 }
 
 interface IssueInfo {
+  uuid: string;
   title: string;
   description: string;
   nodes: number;
@@ -47,6 +48,7 @@ interface IssueInfo {
 }
 
 interface TodoInfo {
+  uuid: string;
   title: string;
   description: string;
   acceptanceCriteria: string[];
