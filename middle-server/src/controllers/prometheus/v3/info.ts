@@ -256,6 +256,7 @@ export const getIssueInfo = async (swarmBountyId: string): Promise<IssueInfo[]> 
         const todos = await getTodoInfo(issue.uuid);
         const { githubUsername, prUrl } = await getLastAvailableAssigneeInfo(issue.assignees || []);
         return {
+          uuid: issue.uuid,
           title: issue.title || "",
           description: issue.description || "",
           swarmBountyId: swarmBountyId,
@@ -282,6 +283,7 @@ export const getTodoInfo = async (issueUuid: string): Promise<TodoInfo[]> => {
       todos.map(async (todo) => {
         const { githubUsername, prUrl } = await getLastAvailableAssigneeInfo(todo.assignees || []);
         return {
+          uuid: todo.uuid,
           title: todo.title || "",
           description: todo.description || "",
           acceptanceCriteria: todo.acceptanceCriteria || [],
