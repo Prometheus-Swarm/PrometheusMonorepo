@@ -13,54 +13,17 @@ class BranchCreationPhase(WorkflowPhase):
             name="Branch Creation",
         )
 
-
-class RepoClassificationPhase(WorkflowPhase):
-    def __init__(self, workflow: Workflow, conversation_id: str = None):
+class ConsolidatedPhase(WorkflowPhase):
+    def __init__(self, workflow: Workflow, tools: list, conversation_id: str = None):
         super().__init__(
             workflow=workflow,
-            prompt_name="classify_repository",
-            available_tools=["read_file", "search_code", "list_directory_contents", "classify_repository"],
+            prompt_name="consolidated_phase",
+            available_tools=tools,
             conversation_id=conversation_id,
-            name="Repository Classification",
+            name="Consolidated Phase",
         )
 
 
-class ReadmeSectionGenerationPhase(WorkflowPhase):
-    def __init__(self, workflow: Workflow, conversation_id: str = None):
-        super().__init__(
-            workflow=workflow,
-            prompt_name="generate_readme_section",
-            available_tools=[
-                "read_file",
-                "search_code",
-                "list_directory_contents", 
-                "create_readme_section",
-            ],
-            conversation_id=conversation_id,
-            name="Readme Section Generation",
-        )
-
-
-class ReadmeFileCreationPhase(WorkflowPhase):
-    def __init__(self, workflow: Workflow, conversation_id: str = None):
-        super().__init__(
-            workflow=workflow,
-            prompt_name="generate_readme",
-            required_tool="create_readme_file",
-            conversation_id=conversation_id,
-            name="Readme File Creation",
-        )
-
-
-class ReadmeReviewPhase(WorkflowPhase):
-    def __init__(self, workflow: Workflow, conversation_id: str = None):
-        super().__init__(
-            workflow=workflow,
-            prompt_name="review_readme_file",
-            available_tools=["read_file", "search_code", "list_directory_contents", "review_readme_file"],
-            conversation_id=conversation_id,
-            name="Readme Review",
-        )
 
 
 class CreatePullRequestPhase(WorkflowPhase):
