@@ -151,7 +151,7 @@ class TodoCreatorWorkflow(Workflow):
                 "data": {
                     "tasks": tasks,
       
-                    "task_spec": self.issue_spec,
+  
                     "repo_owner": self.context["repo_owner"],
                     "repo_name": self.context["repo_name"],
                 },
@@ -166,10 +166,10 @@ class TodoCreatorWorkflow(Workflow):
 
     def _log_workflow_results(self, tasks: List[List[Dict[str, Any]]]) -> None:
         """Log the results of the workflow execution."""
-        log_key_value("Total Tasks Created", len(tasks))
-        for idx, task in enumerate(tasks, 1):
-            log_key_value(f"Task {idx}", f"Title: {task['info']}")
-            log_key_value(f"Task {idx} Description", task['tools'])
+        # log_key_value("Total Tasks Created", len(tasks))
+        # for idx, task in enumerate(tasks, 1):
+        #     log_key_value(f"Task {idx}", f"Title: {task['info']}")
+        #     log_key_value(f"Task {idx} Description", task['tools'])
 
         total_tasks = sum(len(task_list) for task_list in tasks if task_list)
         log_key_value("Total Tasks Created", total_tasks)
@@ -396,8 +396,8 @@ class TodoCreatorWorkflow(Workflow):
                 format_dict = {
                     'info': info,
                     'acceptance_criteria': acceptance_criteria,
-                    'current_files': self.context.get('current_files', ''),
-                    'previous_issues': self.context.get('previous_issues', '')
+                    # 'current_files': self.context.get('current_files', ''),
+                    # 'previous_issues': self.context.get('previous_issues', '')
                 }
                 
                 # Use format_map which won't error on unused fields
