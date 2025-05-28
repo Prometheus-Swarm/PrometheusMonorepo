@@ -2,7 +2,7 @@
 
 FEATURE_BUILDER_PROMPTS = {
     "create_branch": (
-        "Create a descriptive branch name for the following task: {todo}. The branch name should:\n"
+        "Create a descriptive branch name for the following task: {info}. The branch name should:\n"
         "1. Be kebab-case (lowercase with hyphens)\n"
         "2. Be descriptive of the task\n"
         "3. Be concise (max 50 chars)\n"
@@ -11,7 +11,7 @@ FEATURE_BUILDER_PROMPTS = {
     ),
     "implement_todo": (
         "You are working on implementing the following task:\n"
-        "{todo}\n\n"
+        "{info}\n\n"
         "All available files: {current_files}\n\n"
         "IMPORTANT: ALWAYS use relative paths (e.g., 'src/file.py' not '/src/file.py')\n\n"
         "IMPORTANT: Before you begin your task, make sure a test runner is installed and configured correctly.\n"
@@ -33,7 +33,7 @@ FEATURE_BUILDER_PROMPTS = {
         "The previous implementation attempt had the following issues:\n"
         "{previous_issues}\n\n"
         "Continuing in the same conversation, you are working on fixing the implementation for:\n"
-        "{todo}\n\n"
+        "{info}\n\n"
         "Available files: {current_files}\n\n"
         "IMPORTANT: Always use relative paths (e.g., 'src/file.py' not '/src/file.py')\n\n"
         "IMPORTANT: Ignore tests that require an end to end test runner like playwright or cypress\n"
@@ -47,7 +47,7 @@ FEATURE_BUILDER_PROMPTS = {
     ),
     "validate_criteria": (
         "You are validating the implementation of the following task:\n"
-        "{todo}\n\n"
+        "{info}\n\n"
         "Available files: {current_files}\n\n"
         "Acceptance Criteria:\n"
         "{acceptance_criteria}\n\n"
@@ -89,7 +89,7 @@ FEATURE_BUILDER_PROMPTS = {
     "create_pr": (
         "You are creating a pull request for the following task:\n"
         "Task Description:\n"
-        "{todo}\n\n"
+        "{info}\n\n"
         "Available files: {current_files}\n\n"
         "IMPORTANT: Always use relative paths (e.g., 'src/file.py' not '/src/file.py')\n\n"
         "IMPORTANT: Ignore tests that require an end to end test runner like playwright or cypress\n"
@@ -106,7 +106,7 @@ FEATURE_BUILDER_PROMPTS = {
     "create_draft_pr": (
         "You are creating an initial draft pull request for the following task:\n"
         "Task Description:\n"
-        "{todo}\n\n"
+        "{info}\n\n"
         "Available files: {current_files}\n\n"
         "IMPORTANT: Always use relative paths (e.g., 'src/file.py' not '/src/file.py')\n\n"
         "Steps to create the draft pull request:\n"
@@ -116,13 +116,47 @@ FEATURE_BUILDER_PROMPTS = {
     ),
 }
 
+RECOMMENDED_TOOLS_FOR_FEATURE_BUILDER = {
+    "create_branch": ["create_branch"],
+    "implement_todo": [
+        "read_file",
+        "list_files",
+        "write_file",
+        "delete_file",
+        "run_tests",
+        "install_dependency",
+        "setup_dependencies",
+        "create_directory"
+    ],
+    "fix_implementation": [
+        "read_file",
+        "list_files",
+        "edit_file",
+        "delete_file",
+        "run_tests",
+        "install_dependency"
+    ],
+    "validate_criteria": [
+        "read_file",
+        "list_files",
+        "run_tests",
+        "validate_implementation"
+    ],
+    "create_pr": [
+        "read_file",
+        "list_files",
+        "create_worker_pull_request"
+    ],
+    "create_draft_pr": ["create_worker_pull_request"]
+}
+
 DOCUMENT_SUMMARIZER_PROMPTS = {
     "create_branch": (
         "You need to create a feature branch for the README generation.\n"
         "Create a new branch with a descriptive name related to creating a README file.\n"
     ),
     "consolidated_phase":{
-        "{consolidated_phase_prompt}"
+        "{info}"
     },
     "create_pr": (
         "You are creating a pull request."
@@ -136,4 +170,10 @@ DOCUMENT_SUMMARIZER_PROMPTS = {
         "   - Description of all changes made\n"
         "   - The main features and value of the documentation\n"
     ),
+}
+
+RECOMMENDED_TOOLS_FOR_DOCUMENT_SUMMARIZER = {
+    "create_branch": ["create_branch"],
+    "consolidated_phase": ['write_file', 'read_file', 'list_directory_contents', 'create_pull_request_legacy'],
+    "create_pr": ["read_file", "search_code", "list_directory_contents", "create_pull_request_legacy"]
 }

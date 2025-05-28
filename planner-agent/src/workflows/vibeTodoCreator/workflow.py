@@ -16,26 +16,27 @@ from prometheus_swarm.workflows.utils import (
 )
 from .utils import (
     NewTaskModel,
+    PhaseData,
     insert_task_to_mongodb,
     SystemPromptModel,
     insert_system_prompt_to_mongodb,
     SwarmBountyType,
 )
-from src.workflows.vibeTodoCreator.node_prompts import FEATURE_BUILDER_PROMPTS, DOCUMENT_SUMMARIZER_PROMPTS
+from src.workflows.vibeTodoCreator.node_prompts import FEATURE_BUILDER_PROMPTS, DOCUMENT_SUMMARIZER_PROMPTS, RECOMMENDED_TOOLS_FOR_FEATURE_BUILDER, RECOMMENDED_TOOLS_FOR_DOCUMENT_SUMMARIZER
 
 class Task:
-    """Represents a single task with title, description and acceptance criteria."""
+    """Represents a single task with info, tools and acceptance criteria."""
     
-    def __init__(self, title: str, description: str, acceptance_criteria: List[str]):
-        self.title = title
-        self.description = description
-        self.acceptance_criteria = acceptance_criteria
+    def __init__(self, info: str, tools: List[str], acceptance_criteria: List[str]):
+            self.info = info
+            self.tools = tools
+            self.acceptance_criteria = acceptance_criteria
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert task to dictionary format."""
         return {
-            "title": self.title,
-            "description": self.description,
+            "info": self.info,
+            "tools": self.tools,
             "acceptance_criteria": self.acceptance_criteria,
         }
 
@@ -43,8 +44,8 @@ class Task:
     def from_dict(cls, data: Dict[str, Any]) -> "Task":
         """Create task from dictionary."""
         return cls(
-            title=data["title"],
-            description=data["description"],
+            info=data["info"],
+            tools=data["tools"],
             acceptance_criteria=data["acceptance_criteria"],
         )
 
@@ -313,13 +314,13 @@ class TodoCreatorWorkflow(Workflow):
         """Save tasks to MongoDB."""
         for task in tasks_data:
             try:
+                task["phases_data"] = self._get_phase_data(task["info"], task["tools"], task["acceptance_criteria"])
                 task_model = NewTaskModel(
-                    title=task["title"],
-                    description=task["description"],
+
                     acceptanceCriteria=task["acceptance_criteria"],
                     repoOwner=self.context["repo_owner"],
                     repoName=self.context["repo_name"],
-                    prompts=self.context["prompts"],
+                    phasesData=task["phases_data"],
                     dependencyTasks=task["dependency_tasks"],
                     uuid=task["uuid"],
                     issueUuid=issue_uuid,
@@ -414,7 +415,33 @@ class TodoCreatorWorkflow(Workflow):
             current_task["dependency_tasks"] = original_deps
             return has_circular
         return False
-    
+    def _get_phase_data(self, info:str, tools:List[str], acceptance_criteria:List[str]) -> List[PhaseData]:
+        """Get the phase data for the task."""
+
+        phase_data = []
+        if self.bounty_type == SwarmBountyType.BUILD_FEATURE:
+
+            for key in RECOMMENDED_TOOLS_FOR_FEATURE_BUILDER:
+                prompt = FEATURE_BUILDER_PROMPTS[key]
+                tools = RECOMMENDED_TOOLS_FOR_FEATURE_BUILDER[key]
+                # I need to fill in the info, tools and acceptance criteria to the prompt
+                prompt = prompt.format(info=info, acceptance_criteria=acceptance_criteria)
+                phase_data.append(PhaseData(
+                    prompt=prompt,
+                    tools=tools,
+                ))
+            return phase_data
+        if self.bounty_type == SwarmBountyType.DOCUMENT_SUMMARIZER:
+            for key in RECOMMENDED_TOOLS_FOR_DOCUMENT_SUMMARIZER:
+                prompt = DOCUMENT_SUMMARIZER_PROMPTS[key]
+                tools = RECOMMENDED_TOOLS_FOR_DOCUMENT_SUMMARIZER[key]
+                prompt = prompt.format(info=info, acceptance_criteria=acceptance_criteria)
+                phase_data.append(PhaseData(
+                    prompt=prompt,
+                    tools=tools,
+                ))
+            return phase_data
+        return None
     def node_prompts(self) -> Dict[str, Any]:
         """Get the prompts for the node based on bounty type."""
         if self.bounty_type == SwarmBountyType.BUILD_FEATURE:

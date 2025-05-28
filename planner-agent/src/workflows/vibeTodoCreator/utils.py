@@ -50,7 +50,7 @@ class TaskAssignedInfo(BaseModel):
 
 
 class PhaseData(BaseModel):
-    prompts: List[str] = Field(..., description="List of prompts for this phase")
+    prompt: str = Field(..., description="Prompt for this phase")
     tools: List[str] = Field(..., description="List of tools for this phase")
 
 

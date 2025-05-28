@@ -22,14 +22,32 @@ DEFINITIONS = {
                     "items": {
                         "type": "object",
                         "properties": {
-                            "title": {
-                                "type": "string",
-                                "description": "Title of the task",
+                             "info": {
+                                "type": "object",
+                                "description": "Metadata of the task",
+                                "properties": {
+                                    "Type": {
+                                        "type": "string",
+                                        "description": "Type of the file (e.g., 'Folder'/'File')",
+                                    },
+                                    "Path": {
+                                        "type": "string",
+                                        "description": "Path to the file",
+                                    },
+                                    "ReadmeFileName": {
+                                        "type": "string",
+                                        "description": "Name of the readme file",
+                                    },
+                                    "SectionName": {
+                                        "type": "string",
+                                        "description": "Name of the section",
+                                    },
+                                },
                             },
-                            "description": {
-                                "type": "string",
-                                "description": "Description of the task",
-                                "minLength": 10,
+                            "tools": {
+                                "type": "array",
+                                "description": "Tools we need to use to complete the task",
+                                "items": {"type": "string", "minLength": 1},
                             },
                             "acceptance_criteria": {
                                 "type": "array",
@@ -37,7 +55,7 @@ DEFINITIONS = {
                                 "items": {"type": "string", "minLength": 1},
                             },
                         },
-                        "required": ["title", "description", "acceptance_criteria"],
+                        "required": ["info", "tools", "acceptance_criteria"],
                         "additionalProperties": False,
                     },
                 },
@@ -60,7 +78,7 @@ DEFINITIONS = {
                     "items": {
                         "type": "object",
                         "properties": {
-                            "metadata": {
+                            "info": {
                                 "type": "object",
                                 "description": "Metadata of the task",
                                 "properties": {
@@ -82,11 +100,6 @@ DEFINITIONS = {
                                     },
                                 },
                             },
-                            "prompts": {
-                                "type": "array",
-                                "description": "List of prompts for this phase",
-                                "items": {"type": "string", "minLength": 1},
-                            },
                             "tools": {
                                 "type": "array",
                                 "description": "Tools we need to use to complete the task",
@@ -98,9 +111,8 @@ DEFINITIONS = {
                                 "items": {"type": "string", "minLength": 1},
                                 "minItems": 1,
                             },
- 
                         },
-                        "required": ["title", "description", "acceptance_criteria", "type"],
+                        "required": ["info", "tools", "acceptance_criteria"],
                         "additionalProperties": False,
                     },
                 },
