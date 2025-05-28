@@ -63,6 +63,7 @@ def main():
         fork_url=args.fork,
         issue_spec=args.issue_spec,
         bounty_id=str(uuid.uuid4()),
+        bounty_type=SwarmBountyType.BUILD_FEATURE,
     )
 
     result = workflow.run()
@@ -130,4 +131,4 @@ def main_for_docs():
 
 
 if __name__ == "__main__":
-    main_for_docs()
+    main()
