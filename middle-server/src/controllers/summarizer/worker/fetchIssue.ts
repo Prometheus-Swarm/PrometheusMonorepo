@@ -12,7 +12,7 @@ async function checkExistingAssignment(stakingKey: string, roundNumber: number) 
   try {
     console.log(`Checking existing assignment for stakingKey: ${stakingKey}, round: ${roundNumber}`);
     const result = await IssueModel.findOne({
-      bountyType: SwarmBountyType.BUILD_FEATURE,
+      bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER,
       assignees: {
         $elemMatch: {
           stakingKey: stakingKey,
@@ -193,7 +193,7 @@ export const fetchIssueLogic = async (
     // First check what issues are available
     const availableIssues = await IssueModel.find({
       status: IssueStatus.ASSIGN_PENDING,
-      bountyType: SwarmBountyType.BUILD_FEATURE,
+      bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER,
     })
       .select("uuid status")
       .lean();
@@ -203,10 +203,10 @@ export const fetchIssueLogic = async (
     const eligibleIssue = await IssueModel.findOneAndUpdate(
       {
         $or: [
-          { status: IssueStatus.ASSIGN_PENDING, bountyType: SwarmBountyType.BUILD_FEATURE },
+          { status: IssueStatus.ASSIGN_PENDING, bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER },
           {
             $and: [
-              { status: IssueStatus.ASSIGNED, bountyType: SwarmBountyType.BUILD_FEATURE },
+              { status: IssueStatus.ASSIGNED, bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER },
               { updatedAt: { $lt: new Date(Date.now() - 20 * 60 * 1000) } }, // 20 minutes timeout
             ],
           },

@@ -119,7 +119,7 @@ export const addIssuePRLogic = async (
   const issue = await IssueModel.findOneAndUpdate(
     {
       uuid: requestBody.issueUuid,
-      bountyType: SwarmBountyType.BUILD_FEATURE,
+      bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER,
       assignees: {
         $elemMatch: {
           stakingKey: requestBody.stakingKey,

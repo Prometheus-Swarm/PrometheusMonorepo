@@ -58,7 +58,7 @@ async function checkExistingAssignment(stakingKey: string, roundNumber: number) 
         },
       },
     })
-      .select("title acceptanceCriteria repoOwner repoName uuid issueUuid assignees dependencyTasks bountyId")
+      .select("acceptanceCriteria repoOwner repoName uuid issueUuid assignees dependencyTasks bountyId phasesData")
       .lean();
 
     if (!todo) return null;
@@ -193,7 +193,7 @@ export const fetchTodoLogic = async (
       data: {
         success: true,
         data: {
-          title: existingAssignment.todo.title,
+          phasesData: existingAssignment.todo.phasesData,
           todo_uuid: existingAssignment.todo.uuid,
           issue_uuid: existingAssignment.todo.issueUuid,
           acceptance_criteria: existingAssignment.todo.acceptanceCriteria,
@@ -390,7 +390,7 @@ export const fetchTodoLogic = async (
 
     const data = {
       _id: updatedTodo._id,
-      title: updatedTodo.title,
+      phasesData: updatedTodo.phasesData,
       todo_uuid: updatedTodo.uuid,
       issue_uuid: updatedTodo.issueUuid,
       acceptance_criteria: updatedTodo.acceptanceCriteria,

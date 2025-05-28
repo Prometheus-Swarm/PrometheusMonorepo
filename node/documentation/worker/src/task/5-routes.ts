@@ -5,6 +5,7 @@ import { submission } from "./2-submission";
 import { audit } from "./3-audit";
 import { taskRunner } from "@_koii/task-manager";
 import { middleServerUrl, status } from "../utils/constant";
+import { fetchIssue, addAggregatorInfo, addIssuePR, checkIssue, assignIssue } from "../utils/requests/requests";
 
 import { triggerStarFlow } from "../utils/supporter/gitHub";
 
@@ -208,6 +209,83 @@ export async function routes() {
       console.error("[TASK] Error adding PR to summarizer todo:", error);
       // await namespaceWrapper.storeSet(`result-${roundNumber}`, status.SAVING_TODO_PR_FAILED);
       res.status(400).json({ error: "Failed to save PR" });
+    }
+  });
+
+  app.post("/fetch-issue", async (_req, res) => {
+    try {
+      const result = await fetchIssue();
+      if (!result) {
+        throw new Error("Failed to fetch issue");
+      }
+      res.status(200).json(result);
+    } catch (error) {
+      console.error("[TASK] Error fetching issue:", error);
+      res.status(400).json({ error: "Failed to fetch issue" });
+    }
+  });
+
+  app.post("/add-aggregator-info", async (req, res) => {
+    try {
+      const { roundNumber, issueUuid, aggregatorUrl } = req.body;
+      if (!roundNumber || !issueUuid || !aggregatorUrl) {
+        throw new Error("Missing required parameters");
+      }
+      const result = await addAggregatorInfo({ roundNumber, issueUuid, aggregatorUrl });
+      if (!result) {
+        throw new Error("Failed to add aggregator info");
+      }
+      res.status(200).json(result);
+    } catch (error) {
+      console.error("[TASK] Error adding aggregator info:", error);
+      res.status(400).json({ error: "Failed to add aggregator info" });
+    }
+  });
+
+  app.post("/add-issue-pr", async (req, res) => {
+    try {
+      const { roundNumber, issueUuid, prUrl, isFinal } = req.body;
+      if (!roundNumber || !issueUuid || !prUrl || isFinal === undefined) {
+        throw new Error("Missing required parameters");
+      }
+      const result = await addIssuePR({ roundNumber, issueUuid, prUrl, isFinal });
+      if (!result) {
+        throw new Error("Failed to add issue PR");
+      }
+      res.status(200).json(result);
+    } catch (error) {
+      console.error("[TASK] Error adding issue PR:", error);
+      res.status(400).json({ error: "Failed to add issue PR" });
+    }
+  });
+
+  app.post("/check-issue", async (req, res) => {
+    try {
+      const { roundNumber, issueUuid, prUrl, bountyId } = req.body;
+      if (!roundNumber || !issueUuid || !prUrl || !bountyId) {
+        throw new Error("Missing required parameters");
+      }
+      const result = await checkIssue({ roundNumber, issueUuid, prUrl, bountyId });
+      if (!result) {
+        throw new Error("Failed to check issue");
+      }
+      res.status(200).json(result);
+    } catch (error) {
+      console.error("[TASK] Error checking issue:", error);
+      res.status(400).json({ error: "Failed to check issue" });
+    }
+  });
+
+  app.post("/assign-issue", async (_req, res) => {
+    try {
+      const result = await assignIssue();
+      if (!result) {
+        throw new Error("Failed to assign issue");
+      }
+      res.status(200).json(result);
+    } catch (error) {
+      console.error("[TASK] Error assigning issue:", error);
+      res.status(400).json({ error: "Failed to assign issue" });
     }
   });
 }

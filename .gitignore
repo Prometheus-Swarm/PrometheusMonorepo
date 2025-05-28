@@ -45,3 +45,6 @@ data/*
 venv
 
 **/venv/
+
+
+*.log
