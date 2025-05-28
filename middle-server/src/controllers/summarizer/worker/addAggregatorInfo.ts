@@ -6,16 +6,17 @@ import { TodoModel } from "../../../models/Todo";
 import { updateSwarmBountyStatus } from "../../../services/swarmBounty/updateStatus";
 import { SwarmBountyType } from "../../../config/constant";
 
-export function verifyRequestBody(req: Request): { signature: string; stakingKey: string; pubKey: string } | null {
+export function verifyRequestBody(req: Request): { signature: string; stakingKey: string; pubKey: string, taskType: TaskType } | null {
   console.log("verifyRequestBody", req.body);
   try {
     const signature = req.body.signature as string;
     const stakingKey = req.body.stakingKey as string;
     const pubKey = req.body.pubKey as string;
-    if (!signature || !stakingKey || !pubKey) {
+    const taskType = req.body.taskType as TaskType;
+    if (!signature || !stakingKey || !pubKey || !taskType) {
       return null;
     }
-    return { signature, stakingKey, pubKey };
+    return { signature, stakingKey, pubKey, taskType };
   } catch {
     return null;
   }
@@ -26,6 +27,7 @@ async function verifySignatureData(
   stakingKey: string,
   pubKey: string,
   action: string,
+  taskType: TaskType
 ): Promise<{
   roundNumber: number;
   githubUsername: string;
@@ -60,7 +62,8 @@ async function verifySignatureData(
       !body.stakingKey ||
       body.stakingKey !== stakingKey ||
       !body.aggregatorUrl ||
-      !body.issueUuid
+      !body.issueUuid ||
+      body.taskType !== taskType
     ) {
       console.log("bad signature data");
       return null;
@@ -80,6 +83,13 @@ async function verifySignatureData(
 
 export const addAggregatorInfo = async (req: Request, res: Response) => {
   const requestBody = verifyRequestBody(req);
+  const taskType = req.body.taskType as TaskType;
+  if (taskType !== "feature-builder" && taskType !== "summarizer" && taskType !== "bug-finder") {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid taskType, must be feature-builder, summarizer or bug-finder. Current taskType is " + taskType,
+    });
+  }
   if (!requestBody) {
     res.status(401).json({
       success: false,
@@ -93,6 +103,7 @@ export const addAggregatorInfo = async (req: Request, res: Response) => {
     requestBody.stakingKey,
     requestBody.pubKey,
     "create-repo",
+    requestBody.taskType
   );
   if (!signatureData) {
     res.status(401).json({
@@ -169,3 +180,5 @@ export const addAggregatorInfoLogic = async (signatureData: {
     },
   };
 };
+
+type TaskType = "feature-builder" | "summarizer" | "bug-finder";
