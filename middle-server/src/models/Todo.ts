@@ -21,6 +21,14 @@ enum TodoStatus {
   FAILED = "failed", // Task has failed after maximum retries
 }
 
+class PhaseData {
+  @prop({ required: true })
+  public prompt!: string;
+
+  @prop({ required: true, type: () => [String] })
+  public tools!: string[];
+}
+
 class AssignedInfo {
   @prop({ required: true })
   public stakingKey!: string;
@@ -60,9 +68,6 @@ class AssignedInfo {
   existingConnection: builder247DB,
 })
 class Todo {
-  @prop({ required: true })
-  public title!: string;
-
   @prop({ required: false, enum: SwarmBountyType })
   public bountyType?: SwarmBountyType;
 
@@ -74,9 +79,6 @@ class Todo {
 
   @prop({ required: true })
   public issueUuid!: string;
-
-  @prop({ required: true })
-  public description!: string;
 
   @prop({ required: true, type: () => [String] })
   public acceptanceCriteria!: string[];
@@ -92,6 +94,9 @@ class Todo {
 
   @prop({ required: false })
   public assignees?: AssignedInfo[];
+
+  @prop({ required: true, type: () => [PhaseData] })
+  public phasesData!: PhaseData[];
 
   @prop({
     type: String,
