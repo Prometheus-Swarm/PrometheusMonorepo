@@ -5,7 +5,7 @@ from src.server.services import repo_summary_service
 from concurrent.futures import ThreadPoolExecutor
 from prometheus_swarm.database import get_db
 from src.server.services.repo_summary_service import logger
-
+from src.server.services.aggregator_service import create_aggregator_repo
 bp = Blueprint("task", __name__)
 executor = ThreadPoolExecutor(max_workers=2)
 
@@ -92,6 +92,24 @@ def start_task():
         agent_result.add_done_callback(cleanup_callback)
         return jsonify({"status": "Task is being processed"}), 200
 
+
+@bp.post("/consolidate-prs")
+def consolidate_prs():
+    data = request.get_json()
+    logger.info(f"Consolidate PRs data: {data}")
+
+    
+    return jsonify({"status": "Consolidate PRs started"}), 200
+
+@bp.post("/create-aggregator-repo")
+def create_aggregator_repo_route():
+    data = request.get_json()
+    issue_uuid = data["issue_uuid"]
+    repo_owner = data["repo_owner"]
+    repo_name = data["repo_name"]
+    logger.info(f"Create aggregator repo data: {data}")
+    result = create_aggregator_repo(issue_uuid, repo_owner, repo_name)
+    return jsonify(result.get("data", {})), result.get("status", 200)
 
 if __name__ == "__main__":
     from flask import Flask

@@ -1,6 +1,17 @@
 import { prop, getModelForClass, modelOptions, Severity } from "@typegoose/typegoose";
 import { builder247DB } from "../services/database/database";
 
+class StarFollowAssignedInfo {
+  @prop({ required: true })
+  public stakingKey!: string;
+
+  @prop({ required: true })
+  public githubUsername!: string;
+
+  @prop({ required: true })
+  public assignedAt!: Date;
+}
+
 @modelOptions({
   schemaOptions: {
     timestamps: true,
@@ -12,21 +23,17 @@ import { builder247DB } from "../services/database/database";
 })
 class StarFollow {
   @prop({ required: true })
-  public gitHubId!: string;
+  public repoOwner!: string;
 
   @prop({ required: true })
-  public stakingKey!: string;
+  public repoName!: string;
 
-  // Username is changable, so we store GitHubUsername as a backup
-  @prop({ required: true })
-  public gitHubUsername!: string;
-
-  @prop({ required: false })
-  public pendingRepos!: string[];
+  @prop({ type: () => [StarFollowAssignedInfo], default: [] })
+  public assignedTo!: StarFollowAssignedInfo[];
 
   @prop({ required: false })
-  public completedRepos!: string[];
+  public status?: string; // Could be used to track if the repo is still active/valid
 }
 
 const StarFollowModel = getModelForClass(StarFollow);
-export { StarFollow, StarFollowModel };
+export { StarFollow, StarFollowModel, StarFollowAssignedInfo };

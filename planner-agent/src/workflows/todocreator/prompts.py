@@ -47,7 +47,7 @@ PROMPTS = {
         "{issue_spec}\n"
         "The feature has been broken down into the following user stories:\n"
         "{issues}\n"
-        "The specific user story you are planning to implement is: {feature_spec}\n"
+        "The specific user story you are planning to implement is: {current_issue}\n"
         "A repository has already been checked out for you. Examine the existing code and then think through, "
         "step by step, which tasks are needed to implement the user story.\n"
         "You MOST create at least one task that requires a commit to the repository for the user story.\n"
@@ -91,7 +91,7 @@ PROMPTS = {
         "Your task is to regenerate the subtasks based on the feedback provided.\n"
         "The feature has been broken down into the following user stories:\n"
         "{issues}\n"
-        "The specific user story that was broken down into subtasks is: {feature_spec}\n"
+        "The specific user story that was broken down into subtasks is: {current_issue}\n"
         "Original Subtasks: {subtasks}\n"
         "Failed Subtasks: {auditedSubtasks}\n"
         "Feedback: {feedbacks}\n"
@@ -295,5 +295,5 @@ PROMPTS = {
         "[Specify quality standards and review requirements]\n"
         "---\n"
     ),
-
+    
 }
