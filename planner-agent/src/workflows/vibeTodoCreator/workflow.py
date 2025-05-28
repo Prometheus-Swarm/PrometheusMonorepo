@@ -295,7 +295,7 @@ class TodoCreatorWorkflow(Workflow):
                 log_key_value("Saving Task to MongoDB", {
                     "task_info": task["info"],
                     "task_uuid": task["uuid"],
-     
+        
                 })
 
                 task_model = NewTaskModel(
@@ -396,8 +396,8 @@ class TodoCreatorWorkflow(Workflow):
                 format_dict = {
                     'info': info,
                     'acceptance_criteria': acceptance_criteria,
-                    # 'current_files': self.context.get('current_files', ''),
-                    # 'previous_issues': self.context.get('previous_issues', '')
+                    'current_files': '{{current_files}}',
+                    # 'previous_issues': '{{previous_issues}}'
                 }
                 
                 # Use format_map which won't error on unused fields

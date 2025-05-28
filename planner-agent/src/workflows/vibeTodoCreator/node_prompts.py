@@ -60,26 +60,12 @@ RECOMMENDED_TOOLS_FOR_FEATURE_BUILDER = {
         "setup_dependencies",
         "create_directory"
     ],
-    "fix_implementation": [
-        "read_file",
-        "list_files",
-        "edit_file",
-        "delete_file",
-        "run_tests",
-        "install_dependency"
-    ],
-    "validate_criteria": [
-        "read_file",
-        "list_files",
-        "run_tests",
-        "validate_implementation"
-    ],
+   
     "create_pr": [
         "read_file",
         "list_files",
         "create_worker_pull_request"
     ],
-    "create_draft_pr": ["create_worker_pull_request"]
 }
 
 DOCUMENT_SUMMARIZER_PROMPTS = {
