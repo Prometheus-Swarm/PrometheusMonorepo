@@ -59,7 +59,7 @@ class TodoCreatorWorkflow(Workflow):
         prompts: Dict[str, Any],
         source_url: str,
         fork_url: str,
-        issue_spec: Dict[str, Any],
+        task_spec: Dict[str, Any],
         bounty_id: str,
         bounty_type: SwarmBountyType,
     ):
@@ -79,7 +79,9 @@ class TodoCreatorWorkflow(Workflow):
         )
 
         self.bounty_type = bounty_type
-        self.issue_spec = issue_spec
+        self.task_spec = task_spec
+
+        self.context["task_spec"] = task_spec
         self.context["toolsNames"] = get_all_definitions()
 
     def setup(self) -> None:
@@ -119,7 +121,7 @@ class TodoCreatorWorkflow(Workflow):
     def _setup_context(self) -> None:
         """Set up workflow context with current files and issue spec."""
         self.context["current_files"] = get_current_files()
-        self.context["issue_spec"] = self.issue_spec
+        self.context["task_spec"] = self.task_spec
 
     def cleanup(self) -> None:
         """Clean up workspace."""
@@ -128,36 +130,28 @@ class TodoCreatorWorkflow(Workflow):
     def run(self) -> Dict[str, Any]:
         """Execute the complete workflow."""
         try:
-            # Generate issues
-            issues_result = self.generate_issues()
-            if not issues_result or not issues_result.get("success"):
-                raise Exception("Failed to generate issues")
+            # Set task spec in context
+            self.context["task_spec"] = self.task_spec
+            
+            # Generate tasks
+            task_result = self.generate_tasks()
+            if not task_result or not task_result.get("success"):
+                raise Exception("Failed to generate tasks")
 
-            issues = issues_result["data"]["issues"]
-            self.context["issues"] = issues
-            tasks = []
+            tasks = task_result["data"]["tasks"]
 
-            # Generate tasks for each issue
-            for issue in issues:
-                self.context["current_issue"] = issue
-                task_result = self.generate_tasks(issue["uuid"])
-                if task_result:
-                    tasks.append(task_result["data"]["tasks"])
 
-            # Generate system prompts
-            system_prompt_result = self.generate_system_prompts(issues, tasks)
 
             # Log results
-            self._log_workflow_results(issues, tasks)
+            self._log_workflow_results( [tasks])
 
             return {
                 "success": True,
-                "message": "Issue generation workflow completed",
+                "message": "Task generation workflow completed",
                 "data": {
-                    "issues": issues,
                     "tasks": tasks,
-                    "system_prompt": system_prompt_result["data"]["prompt"] if system_prompt_result else None,
-                    "issue_spec": self.issue_spec,
+      
+                    "task_spec": self.issue_spec,
                     "repo_owner": self.context["repo_owner"],
                     "repo_name": self.context["repo_name"],
                 },
@@ -170,12 +164,12 @@ class TodoCreatorWorkflow(Workflow):
                 "data": None,
             }
 
-    def _log_workflow_results(self, issues: List[Dict[str, Any]], tasks: List[List[Dict[str, Any]]]) -> None:
+    def _log_workflow_results(self, tasks: List[List[Dict[str, Any]]]) -> None:
         """Log the results of the workflow execution."""
-        log_key_value("Total Issues Created", len(issues))
-        for idx, issue in enumerate(issues, 1):
-            log_key_value(f"Issue {idx}", f"Title: {issue['title']}")
-            log_key_value(f"Issue {idx} Description", issue['description'])
+        log_key_value("Total Tasks Created", len(tasks))
+        for idx, task in enumerate(tasks, 1):
+            log_key_value(f"Task {idx}", f"Title: {task['info']}")
+            log_key_value(f"Task {idx} Description", task['tools'])
 
         total_tasks = sum(len(task_list) for task_list in tasks if task_list)
         log_key_value("Total Tasks Created", total_tasks)
@@ -188,26 +182,7 @@ class TodoCreatorWorkflow(Workflow):
                     if task.get('dependency_tasks'):
                         log_key_value(f"Task {idx} Dependencies", task['dependency_tasks'])
 
-    def generate_issues(self) -> Optional[Dict[str, Any]]:
-        """Generate issues based on the workflow context."""
-        try:
-            self.setup()
-            generate_issues_phase = phases.IssueGenerationPhase(workflow=self, bounty_type=self.bounty_type)
-            result = generate_issues_phase.execute()
-
-            if not result or not result.get("success"):
-                log_error(Exception(result.get("error", "No result")), "Issue generation failed")
-                return None
-            return result
-        except Exception as e:
-            log_error(e, "Issue generation workflow failed")
-            return {
-                "success": False,
-                "message": f"Issue generation workflow failed: {str(e)}",
-                "data": {"issues": []},
-            }
-
-    def generate_tasks(self, issue_uuid: str) -> Optional[Dict[str, Any]]:
+    def generate_tasks(self) -> Optional[Dict[str, Any]]:
         """Generate tasks for a specific issue."""
         try:
             self.setup()
@@ -216,7 +191,7 @@ class TodoCreatorWorkflow(Workflow):
                 return None
 
             self._process_task_dependencies(tasks_data)
-            self._save_tasks_to_mongodb(tasks_data, issue_uuid)
+            self._save_tasks_to_mongodb(tasks_data)
 
             return {
                 "success": True,
@@ -251,6 +226,7 @@ class TodoCreatorWorkflow(Workflow):
         log_key_value("Tasks Created Number", len(tasks_data))
         self.context["subtasks"] = tasks_data
         return tasks_data
+
     def _decode_decomposition_tasks_result(self, tasks_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Decode the decomposition result."""
 
@@ -310,7 +286,7 @@ class TodoCreatorWorkflow(Workflow):
                         )
                         task["dependency_tasks"].remove(dep)
 
-    def _save_tasks_to_mongodb(self, tasks_data: List[Dict[str, Any]], issue_uuid: str) -> None:
+    def _save_tasks_to_mongodb(self, tasks_data: List[Dict[str, Any]]) -> None:
         """Save tasks to MongoDB."""
         for task in tasks_data:
             try:
@@ -319,7 +295,7 @@ class TodoCreatorWorkflow(Workflow):
                 log_key_value("Saving Task to MongoDB", {
                     "task_info": task["info"],
                     "task_uuid": task["uuid"],
-                    "issue_uuid": issue_uuid
+     
                 })
 
                 task_model = NewTaskModel(
@@ -329,7 +305,6 @@ class TodoCreatorWorkflow(Workflow):
                     phasesData=task["phases_data"],
                     dependencyTasks=task["dependency_tasks"],
                     uuid=task["uuid"],
-                    issueUuid=issue_uuid,
                     bountyId=self.context["bounty_id"],
                     bountyType=self.bounty_type,
                 )
@@ -338,7 +313,6 @@ class TodoCreatorWorkflow(Workflow):
                 if result:
                     log_key_value("Successfully saved task to MongoDB", {
                         "task_uuid": task["uuid"],
-                        "issue_uuid": issue_uuid
                     })
                 else:
                     log_error(
@@ -370,34 +344,9 @@ class TodoCreatorWorkflow(Workflow):
                 "data": {"prompt": None},
             }
 
-    def _setup_system_prompt_context(self, issues: List[Dict[str, Any]], tasks: List[List[Dict[str, Any]]]) -> None:
-        """Set up context for system prompt generation."""
-        self.context["tasks"] = tasks
-        self.context["issues"] = issues
-        self.context["issue_spec"] = self.issue_spec
 
-    def _execute_system_prompt_generation(self) -> Optional[Dict[str, Any]]:
-        """Execute the system prompt generation phase."""
-        system_prompt_phase = phases.SystemPromptGenerationPhase(workflow=self, bounty_type=self.bounty_type)
-        result = system_prompt_phase.execute()
-        
-        if not result or not result.get("success"):
-            log_error(Exception(result.get("error", "No result")), "System prompt generation failed")
-            return None
-            
-        return result
 
-    def _save_system_prompt(self, prompt: str) -> None:
-        """Save system prompt to MongoDB."""
-        try:
-            system_prompt_model = SystemPromptModel(
-                prompt=prompt,
-                bountyId=self.context["bounty_id"],
-                bountyType=self.bounty_type,
-            )
-            insert_system_prompt_to_mongodb(system_prompt_model)
-        except Exception as e:
-            log_error(e, "Failed to save system prompt to MongoDB")
+
 
     def check_circular_dependency(
         self, task_uuid: str, dependency_tasks: List[str], all_tasks: List[Dict[str, Any]]
@@ -432,6 +381,7 @@ class TodoCreatorWorkflow(Workflow):
             current_task["dependency_tasks"] = original_deps
             return has_circular
         return False
+
     def _get_phase_data(self, info:str, tools:List[str], acceptance_criteria:List[str]) -> List[PhaseData]:
         """Get the phase data for the task."""
 
@@ -478,6 +428,7 @@ class TodoCreatorWorkflow(Workflow):
                 ))
             return phase_data
         return None
+
     def node_prompts(self) -> Dict[str, Any]:
         """Get the prompts for the node based on bounty type."""
         if self.bounty_type == SwarmBountyType.BUILD_FEATURE:
