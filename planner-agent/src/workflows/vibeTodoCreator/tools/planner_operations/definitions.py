@@ -26,21 +26,13 @@ DEFINITIONS = {
                                 "type": "object",
                                 "description": "Metadata of the task",
                                 "properties": {
-                                    "Type": {
+                                    "Todo": {
                                         "type": "string",
-                                        "description": "Type of the file (e.g., 'Folder'/'File')",
+                                        "description": "What needs to be done",
                                     },
-                                    "Path": {
+                                    "Description": {
                                         "type": "string",
-                                        "description": "Path to the file",
-                                    },
-                                    "ReadmeFileName": {
-                                        "type": "string",
-                                        "description": "Name of the readme file",
-                                    },
-                                    "SectionName": {
-                                        "type": "string",
-                                        "description": "Name of the section",
+                                        "description": "Detailed explanation of the work required",
                                     },
                                 },
                             },
