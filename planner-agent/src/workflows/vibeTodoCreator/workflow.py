@@ -183,8 +183,8 @@ class TodoCreatorWorkflow(Workflow):
         for task_list in tasks:
             if task_list:
                 for idx, task in enumerate(task_list, 1):
-                    log_key_value(f"Task {idx}", f"Title: {task['title']}")
-                    log_key_value(f"Task {idx} Description", task['description'])
+                    log_key_value(f"Task {idx}", f"Title: {task['info']}")
+                    log_key_value(f"Task {idx} Description", task['tools'])
                     if task.get('dependency_tasks'):
                         log_key_value(f"Task {idx} Dependencies", task['dependency_tasks'])
 
@@ -306,7 +306,7 @@ class TodoCreatorWorkflow(Workflow):
                     if dep_task and task["uuid"] in dep_task.get("dependency_tasks", []):
                         log_error(
                             Exception("Mutual dependency detected"),
-                            f"Removing mutual dependency between {task['title']} and {dep_task['title']}"
+                            f"Removing mutual dependency between {task['info']} and {dep_task['info']}"
                         )
                         task["dependency_tasks"].remove(dep)
 
@@ -315,6 +315,8 @@ class TodoCreatorWorkflow(Workflow):
         for task in tasks_data:
             try:
                 task["phases_data"] = self._get_phase_data(task["info"], task["tools"], task["acceptance_criteria"])
+
+                log_key_value("Phases Data", task["phases_data"])
                 task_model = NewTaskModel(
 
                     acceptanceCriteria=task["acceptance_criteria"],
@@ -331,7 +333,7 @@ class TodoCreatorWorkflow(Workflow):
             except Exception as e:
                 log_error(
                     e,
-                    f"Failed to save task {task.get('title', 'unknown')} "
+                    f"Failed to save task {task.get('info', 'unknown')} "
                     f"with UUID {task.get('uuid', 'unknown')}"
                 )
 
@@ -420,11 +422,11 @@ class TodoCreatorWorkflow(Workflow):
 
         phase_data = []
         if self.bounty_type == SwarmBountyType.BUILD_FEATURE:
-
             for key in RECOMMENDED_TOOLS_FOR_FEATURE_BUILDER:
-                prompt = FEATURE_BUILDER_PROMPTS[key]
+                log_key_value("Key Value", key)
+                prompt = str(FEATURE_BUILDER_PROMPTS[key])  # Ensure prompt is a string
                 tools = RECOMMENDED_TOOLS_FOR_FEATURE_BUILDER[key]
-                # I need to fill in the info, tools and acceptance criteria to the prompt
+                # Format the prompt with the task info and acceptance criteria
                 prompt = prompt.format(info=info, acceptance_criteria=acceptance_criteria)
                 phase_data.append(PhaseData(
                     prompt=prompt,
@@ -433,7 +435,7 @@ class TodoCreatorWorkflow(Workflow):
             return phase_data
         if self.bounty_type == SwarmBountyType.DOCUMENT_SUMMARIZER:
             for key in RECOMMENDED_TOOLS_FOR_DOCUMENT_SUMMARIZER:
-                prompt = DOCUMENT_SUMMARIZER_PROMPTS[key]
+                prompt = str(DOCUMENT_SUMMARIZER_PROMPTS[key])  # Ensure prompt is a string
                 tools = RECOMMENDED_TOOLS_FOR_DOCUMENT_SUMMARIZER[key]
                 prompt = prompt.format(info=info, acceptance_criteria=acceptance_criteria)
                 phase_data.append(PhaseData(
