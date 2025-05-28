@@ -316,9 +316,13 @@ class TodoCreatorWorkflow(Workflow):
             try:
                 task["phases_data"] = self._get_phase_data(task["info"], task["tools"], task["acceptance_criteria"])
 
-                log_key_value("Phases Data", task["phases_data"])
-                task_model = NewTaskModel(
+                log_key_value("Saving Task to MongoDB", {
+                    "task_info": task["info"],
+                    "task_uuid": task["uuid"],
+                    "issue_uuid": issue_uuid
+                })
 
+                task_model = NewTaskModel(
                     acceptanceCriteria=task["acceptance_criteria"],
                     repoOwner=self.context["repo_owner"],
                     repoName=self.context["repo_name"],
@@ -329,7 +333,18 @@ class TodoCreatorWorkflow(Workflow):
                     bountyId=self.context["bounty_id"],
                     bountyType=self.bounty_type,
                 )
-                insert_task_to_mongodb(task_model)
+                result = insert_task_to_mongodb(task_model)
+                
+                if result:
+                    log_key_value("Successfully saved task to MongoDB", {
+                        "task_uuid": task["uuid"],
+                        "issue_uuid": issue_uuid
+                    })
+                else:
+                    log_error(
+                        Exception("Failed to save task to MongoDB"),
+                        f"Task {task.get('info', 'unknown')} with UUID {task.get('uuid', 'unknown')} was not saved"
+                    )
             except Exception as e:
                 log_error(
                     e,
@@ -426,8 +441,17 @@ class TodoCreatorWorkflow(Workflow):
                 log_key_value("Key Value", key)
                 prompt = str(FEATURE_BUILDER_PROMPTS[key])  # Ensure prompt is a string
                 tools = RECOMMENDED_TOOLS_FOR_FEATURE_BUILDER[key]
-                # Format the prompt with the task info and acceptance criteria
-                prompt = prompt.format(info=info, acceptance_criteria=acceptance_criteria)
+                
+                # Create a dictionary with all possible fields
+                format_dict = {
+                    'info': info,
+                    'acceptance_criteria': acceptance_criteria,
+                    'current_files': self.context.get('current_files', ''),
+                    'previous_issues': self.context.get('previous_issues', '')
+                }
+                
+                # Use format_map which won't error on unused fields
+                prompt = prompt.format_map(format_dict)
                 phase_data.append(PhaseData(
                     prompt=prompt,
                     tools=tools,
@@ -437,7 +461,17 @@ class TodoCreatorWorkflow(Workflow):
             for key in RECOMMENDED_TOOLS_FOR_DOCUMENT_SUMMARIZER:
                 prompt = str(DOCUMENT_SUMMARIZER_PROMPTS[key])  # Ensure prompt is a string
                 tools = RECOMMENDED_TOOLS_FOR_DOCUMENT_SUMMARIZER[key]
-                prompt = prompt.format(info=info, acceptance_criteria=acceptance_criteria)
+                
+                # Create a dictionary with all possible fields
+                format_dict = {
+                    'info': info,
+                    'acceptance_criteria': acceptance_criteria,
+                    'current_files': self.context.get('current_files', ''),
+                    'previous_issues': self.context.get('previous_issues', '')
+                }
+                
+                # Use format_map which won't error on unused fields
+                prompt = prompt.format_map(format_dict)
                 phase_data.append(PhaseData(
                     prompt=prompt,
                     tools=tools,

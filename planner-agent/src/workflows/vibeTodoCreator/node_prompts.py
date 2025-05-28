@@ -155,9 +155,11 @@ DOCUMENT_SUMMARIZER_PROMPTS = {
         "You need to create a feature branch for the README generation.\n"
         "Create a new branch with a descriptive name related to creating a README file.\n"
     ),
-    "consolidated_phase":{
-        "{info}"
-    },
+    "consolidated_phase": (
+        "Task Information: {info}\n\n"
+        "Acceptance Criteria:\n{acceptance_criteria}\n\n"
+        "Please proceed with implementing this documentation task."
+    ),
     "create_pr": (
         "You are creating a pull request."
         "The repository has been cloned to the current directory.\n"
