@@ -6,7 +6,9 @@ import { TodoModel } from "../../../models/Todo";
 import { updateSwarmBountyStatus } from "../../../services/swarmBounty/updateStatus";
 import { SwarmBountyType } from "../../../config/constant";
 
-export function verifyRequestBody(req: Request): { signature: string; stakingKey: string; pubKey: string, taskType: TaskType } | null {
+export function verifyRequestBody(
+  req: Request,
+): { signature: string; stakingKey: string; pubKey: string; taskType: TaskType } | null {
   console.log("verifyRequestBody", req.body);
   try {
     const signature = req.body.signature as string;
@@ -27,7 +29,7 @@ async function verifySignatureData(
   stakingKey: string,
   pubKey: string,
   action: string,
-  taskType: TaskType
+  taskType: TaskType,
 ): Promise<{
   roundNumber: number;
   githubUsername: string;
@@ -103,7 +105,7 @@ export const addAggregatorInfo = async (req: Request, res: Response) => {
     requestBody.stakingKey,
     requestBody.pubKey,
     "create-repo",
-    requestBody.taskType
+    requestBody.taskType,
   );
   if (!signatureData) {
     res.status(401).json({
