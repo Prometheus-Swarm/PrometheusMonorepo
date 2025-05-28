@@ -1,7 +1,7 @@
 from src.server.create_app import create_app
 import os
 from flask import request, jsonify
-from prometheus_swarm.utils.logging import logger
+from prometheus_swarm.utils.logging import logger, swarm_bounty_id_var
 from prometheus_swarm.clients import setup_client
 from src.workflows.todocreator.workflow import TodoCreatorWorkflow
 from src.workflows.todocreator.prompts import PROMPTS
@@ -61,6 +61,9 @@ def audit_issues_and_tasks(future):
 def create_todos(source_url: str, fork_url: str, issue_spec: dict, bounty_id: str, bounty_type: SwarmBountyType):
     """Run the workflow in a background thread"""
     try:
+        # Set the bounty ID in the worker thread's context
+        swarm_bounty_id_var.set(bounty_id)
+
         workflow = TodoCreatorWorkflow(
             client=setup_client("anthropic"),
             prompts=PROMPTS,
