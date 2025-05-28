@@ -59,7 +59,6 @@ class NewTaskModel(BaseModel):
         default_factory=lambda: str(uuid.uuid4()), description="Unique identifier"
     )
     bountyType: SwarmBountyType = Field(..., description="Bounty type")
-    issueUuid: str = Field(..., description="Issue UUID")
     acceptanceCriteria: List[str] = Field(..., description="Acceptance criteria")
     repoOwner: str = Field(..., description="Repository owner")
     repoName: str = Field(..., description="Repository name")

@@ -45,10 +45,10 @@ def main():
         help="Model provider to use (default: anthropic)",
     )
     parser.add_argument(
-        "--issue-spec",
+        "--task-spec",
         type=str,
         required=True,
-        help="Description of the issue to implement",
+        help="Description of the task to implement",
     )
     args = parser.parse_args()
 
@@ -61,7 +61,7 @@ def main():
         prompts=PROMPTS,
         source_url=args.repo,
         fork_url=args.fork,
-        issue_spec=args.issue_spec,
+        task_spec=args.task_spec,
         bounty_id=str(uuid.uuid4()),
         bounty_type=SwarmBountyType.BUILD_FEATURE,
     )
