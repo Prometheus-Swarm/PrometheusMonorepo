@@ -22,19 +22,19 @@ class LogEntry {
   },
   existingConnection: builder247DB,
 })
-class BuilderLogs {
+class AgentLogs {
   @prop({ required: true })
   public stakingKey!: string;
 
-  @prop({ required: false })
-  public swarmBountyId?: string;
+  @prop({ required: true })
+  public swarmBountyId!: string;
 
   @prop({ required: true })
-  public taskId!: string;
+  public todoUUID!: string;
 
   @prop({ type: () => [LogEntry], default: [] })
   public logs!: LogEntry[];
 }
 
-const BuilderLogsModel = getModelForClass(BuilderLogs);
-export { BuilderLogs, BuilderLogsModel };
+const AgentLogsModel = getModelForClass(AgentLogs);
+export { AgentLogs, AgentLogsModel};

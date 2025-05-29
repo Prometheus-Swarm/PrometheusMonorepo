@@ -1,13 +1,16 @@
-import { DocumentationModel } from "../../../models/Documentation";
 import { Request, Response } from "express";
-import { DocumentationStatus } from "../../../models/Documentation";
+import { Status, Todo } from "../../../models/Todo";
 
 import { SwarmBountyStatus, SwarmBountyType } from "../../../config/constant";
-import { getLastRoundValueLength } from "../../../utils/taskState/activeNode";
-import { BugFinderModel, BugFinderStatus } from "../../../models/BugFinder";
+
 import { SpecModel, SpecStatus } from "../../../models/Spec";
-import { IssueModel, IssueStatus } from "../../../models/Issue";
 import { TodoModel, TodoStatus } from "../../../models/Todo";
+
+
+
+// TODO: Fix the endpoints below
+
+
 
 interface ResponseInfo {
   success: boolean;
@@ -24,23 +27,14 @@ interface DetailedInfo {
   prUrl: string;
   subTasks?: DetailedInfo[];
 }
-export const SwarmBountyStatusDocumentationStatusMapping = {
-  [DocumentationStatus.DONE]: SwarmBountyStatus.COMPLETED,
-  [DocumentationStatus.FAILED]: SwarmBountyStatus.FAILED,
-  [DocumentationStatus.IN_PROGRESS]: SwarmBountyStatus.ASSIGNED,
-  [DocumentationStatus.PR_RECEIVED]: SwarmBountyStatus.AUDITING,
-  [DocumentationStatus.IN_REVIEW]: SwarmBountyStatus.AUDITING,
-  [DocumentationStatus.INITIALIZED]: SwarmBountyStatus.IN_PROGRESS,
-  [DocumentationStatus.DRAFT_PR_RECEIVED]: SwarmBountyStatus.ASSIGNED,
-};
-
-export const SwarmBountyStatusBugFinderStatusMapping = {
-  [BugFinderStatus.DONE]: SwarmBountyStatus.COMPLETED,
-  [BugFinderStatus.FAILED]: SwarmBountyStatus.FAILED,
-  [BugFinderStatus.IN_PROGRESS]: SwarmBountyStatus.ASSIGNED,
-  [BugFinderStatus.PR_RECEIVED]: SwarmBountyStatus.AUDITING,
-  [BugFinderStatus.IN_REVIEW]: SwarmBountyStatus.AUDITING,
-  [BugFinderStatus.INITIALIZED]: SwarmBountyStatus.IN_PROGRESS,
+export const SwarmBountyStatusMapping = {
+  [Status.DONE]: SwarmBountyStatus.COMPLETED,
+  [Status.FAILED]: SwarmBountyStatus.FAILED,
+  [Status.IN_PROGRESS]: SwarmBountyStatus.ASSIGNED,
+  [Status.PR_RECEIVED]: SwarmBountyStatus.AUDITING,
+  [Status.IN_REVIEW]: SwarmBountyStatus.AUDITING,
+  [Status.INITIALIZED]: SwarmBountyStatus.IN_PROGRESS,
+  [Status.DRAFT_PR_RECEIVED]: SwarmBountyStatus.ASSIGNED,
 };
 
 export const SwarmBountyStatusSpecStatusMapping = {
@@ -50,20 +44,6 @@ export const SwarmBountyStatusSpecStatusMapping = {
   [SpecStatus.INITIALIZED]: SwarmBountyStatus.IN_PROGRESS,
 };
 
-export const SwarmBountyStatusIssueStatusMapping = {
-  // [IssueStatus.INITIALIZED]: SwarmBountyStatus.PENDING,
-  [IssueStatus.INITIALIZED]: SwarmBountyStatus.IN_PROGRESS,
-  [IssueStatus.AGGREGATOR_PENDING]: SwarmBountyStatus.IN_PROGRESS,
-  [IssueStatus.IN_PROGRESS]: SwarmBountyStatus.IN_PROGRESS,
-  [IssueStatus.ASSIGN_PENDING]: SwarmBountyStatus.IN_PROGRESS,
-  [IssueStatus.ASSIGNED]: SwarmBountyStatus.ASSIGNED,
-  [IssueStatus.IN_REVIEW]: SwarmBountyStatus.AUDITING,
-  // [IssueStatus.APPROVED]: SwarmBountyStatus.APPROVED,
-  [IssueStatus.APPROVED]: SwarmBountyStatus.AUDITING,
-  [IssueStatus.SUBMITTED]: SwarmBountyStatus.COMPLETED,
-  [IssueStatus.MERGED]: SwarmBountyStatus.COMPLETED,
-  [IssueStatus.FAILED]: SwarmBountyStatus.FAILED,
-};
 
 export const SwarmBountyStatusTodoStatusMapping = {
   // [TodoStatus.INITIALIZED]: SwarmBountyStatus.PENDING,
@@ -96,23 +76,8 @@ export const info = async (req: Request, res: Response) => {
     res.status(400).json(response);
     return;
   }
-  if (swarmType === SwarmBountyType.DOCUMENT_SUMMARIZER) {
-    const { statuscode, data } = await getDocumentationInfo(swarmBountyId as string);
-    res.status(statuscode).json(data);
-    return;
-  }
-  if (swarmType === SwarmBountyType.FIND_BUGS) {
-    const { statuscode, data } = await getFindBugsInfo(swarmBountyId as string);
-    res.status(statuscode).json(data);
-    return;
-  }
-  if (swarmType === SwarmBountyType.BUILD_FEATURE) {
-    const { statuscode, data } = await getSpecInfo(swarmBountyId as string);
-    res.status(statuscode).json(data);
-    return;
-  }
-  res.status(500).json({ error: "Internal server error" });
-  return;
+  const { statuscode, data } = await getInfo(swarmBountyId as string);
+  res.status(statuscode).json(data);
 };
 
 async function getLastAvailableAssigneeInfo(assignees: { githubUsername?: string; prUrl?: string }[]) {
@@ -130,48 +95,6 @@ async function getLastAvailableAssigneeInfo(assignees: { githubUsername?: string
   };
 }
 // @dummy function
-export const getFindBugsInfo = async (swarmsBountyId: string): Promise<{ statuscode: number; data: ResponseInfo }> => {
-  try {
-    const bugFinder = await BugFinderModel.findOne({ swarmBountyId: swarmsBountyId });
-    if (!bugFinder) {
-      return {
-        statuscode: 409,
-        data: {
-          success: false,
-          data: null,
-        },
-      };
-    }
-    const { githubUsername, prUrl } = await getLastAvailableAssigneeInfo(bugFinder.assignedTo);
-
-    const detailedInfo: DetailedInfo = {
-      swarmBountyId: swarmsBountyId,
-      taskName: bugFinder?.repoName + " - " + "Bug Finder",
-      swarmType: SwarmBountyType.FIND_BUGS,
-      nodes: bugFinder?.assignedTo.length || 0,
-      status: SwarmBountyStatusBugFinderStatusMapping[bugFinder.status as BugFinderStatus],
-      githubUsername,
-      prUrl,
-    };
-    //
-    return {
-      statuscode: 200,
-      data: {
-        success: true,
-        data: detailedInfo,
-      },
-    };
-  } catch (error) {
-    console.log("error", error);
-    return {
-      statuscode: 500,
-      data: {
-        success: false,
-        data: null,
-      },
-    };
-  }
-};
 
 export const getSpecInfo = async (swarmBountyId: string): Promise<{ statuscode: number; data: ResponseInfo }> => {
   try {
@@ -185,7 +108,6 @@ export const getSpecInfo = async (swarmBountyId: string): Promise<{ statuscode: 
         },
       };
     }
-    const issues = await getIssueInfo(swarmBountyId);
     const detailedInfo: DetailedInfo = {
       swarmBountyId: swarmBountyId,
       taskName: spec?.repoName + " - " + "Spec",
@@ -194,7 +116,6 @@ export const getSpecInfo = async (swarmBountyId: string): Promise<{ statuscode: 
       status: SwarmBountyStatusSpecStatusMapping[spec.status as SpecStatus],
       githubUsername: "", // Not available for spec
       prUrl: "", // Not available for spec
-      subTasks: issues,
     };
     return {
       statuscode: 200,
@@ -214,31 +135,7 @@ export const getSpecInfo = async (swarmBountyId: string): Promise<{ statuscode: 
     };
   }
 };
-export const getIssueInfo = async (swarmBountyId: string): Promise<DetailedInfo[]> => {
-  try {
-    const issues = await IssueModel.find({ bountyId: swarmBountyId });
-    const responseInfo: DetailedInfo[] = await Promise.all(
-      issues.map(async (issue) => {
-        const todos = await getTodoInfo(issue.uuid, swarmBountyId);
-        const { githubUsername, prUrl } = await getLastAvailableAssigneeInfo(issue.assignees || []);
-        return {
-          swarmBountyId: swarmBountyId,
-          taskName: issue.repoName + " - " + "Issue",
-          swarmType: SwarmBountyType.BUILD_FEATURE,
-          nodes: todos.length || 0,
-          status: SwarmBountyStatusIssueStatusMapping[issue.status as IssueStatus],
-          githubUsername,
-          prUrl,
-          subTasks: todos,
-        };
-      }),
-    );
-    return responseInfo;
-  } catch (error) {
-    console.log("error", error);
-    return [];
-  }
-};
+
 export const getTodoInfo = async (issueUuid: string, swarmsBountyId: string): Promise<DetailedInfo[]> => {
   try {
     const todos = await TodoModel.find({ issueUuid: issueUuid, swarmBountyId: swarmsBountyId });
@@ -261,12 +158,12 @@ export const getTodoInfo = async (issueUuid: string, swarmsBountyId: string): Pr
     return [];
   }
 };
-export const getDocumentationInfo = async (
+export const getInfo = async (
   swarmsBountyId: string,
 ): Promise<{ statuscode: number; data: { success: boolean; data: DetailedInfo | null } }> => {
   try {
-    const documentation = await DocumentationModel.findOne({ swarmBountyId: swarmsBountyId });
-    if (!documentation) {
+    const todo = await TodoModel.findOne({ swarmBountyId: swarmsBountyId });
+    if (!todo) {
       return {
         statuscode: 409,
         data: {
@@ -275,13 +172,13 @@ export const getDocumentationInfo = async (
         },
       };
     }
-    const { githubUsername, prUrl } = await getLastAvailableAssigneeInfo(documentation.assignedTo);
+    const { githubUsername, prUrl } = await getLastAvailableAssigneeInfo(todo.assignees || []);
     const detailedInfo: DetailedInfo = {
       swarmBountyId: swarmsBountyId,
-      taskName: documentation?.repoName + " - " + "Documentation",
+      taskName: todo?.repoName + " - " + "Documentation",
       swarmType: SwarmBountyType.DOCUMENT_SUMMARIZER,
-      nodes: documentation?.assignedTo.length || 0,
-      status: SwarmBountyStatusDocumentationStatusMapping[documentation.status],
+      nodes: todo?.assignees?.length || 0,
+      status: SwarmBountyStatusMapping[todo.status as Status],
       githubUsername,
       prUrl,
     };
@@ -303,11 +200,3 @@ export const getDocumentationInfo = async (
     };
   }
 };
-// export const getDocumentationNumberOfNodesTemp = async (): Promise<number> => {
-//   const documentationTaskId = process.env.DOCUMENT_SUMMARIZER_TASK_ID;
-//   if (!documentationTaskId) {
-//     throw new Error("DOCUMENTATION_TASK_ID is not set");
-//   }
-//   const numberOfNodes = await getLastRoundValueLength(documentationTaskId);
-//   return numberOfNodes;
-// };

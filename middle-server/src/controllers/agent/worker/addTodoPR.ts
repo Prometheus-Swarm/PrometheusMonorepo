@@ -1,8 +1,8 @@
-import { TodoModel, DocumentationStatus } from "../../../models/Todo";
+import { TodoModel, Status } from "../../../models/Todo";
 
 import { Request, Response } from "express";
 import { verifySignature } from "../../../utils/sign";
-import { documentSummarizerTaskID, SwarmBountyStatus } from "../../../config/constant";
+import { taskIDs, SwarmBountyStatus } from "../../../config/constant";
 import { isValidStakingKey } from "../../../utils/taskState";
 import { updateSwarmBountyStatus } from "../../../services/swarmBounty/updateStatus";
 
@@ -26,7 +26,7 @@ async function verifySignatureData(
   signature: string,
   stakingKey: string,
   action: string,
-): Promise<{ prUrl: string; swarmBountyId: string } | null> {
+): Promise<{ prUrl: string; swarmBountyId: string, taskId: string } | null> {
   try {
     const { data, error } = await verifySignature(signature, stakingKey);
     if (error || !data) {
@@ -37,7 +37,7 @@ async function verifySignatureData(
     console.log("signature payload", { body, stakingKey });
     if (
       !body.taskId ||
-      body.taskId !== documentSummarizerTaskID ||
+      !taskIDs.includes(body.taskId) ||
       body.action !== action ||
       !body.prUrl ||
       !body.stakingKey ||
@@ -46,7 +46,7 @@ async function verifySignatureData(
     ) {
       return null;
     }
-    return { prUrl: body.prUrl, swarmBountyId: body.swarmBountyId };
+    return { prUrl: body.prUrl, swarmBountyId: body.swarmBountyId, taskId: body.taskId };
   } catch {
     return null;
   }
@@ -55,34 +55,34 @@ export async function updateAssignedInfoPrUrl(
   stakingKey: string,
   prUrl: string,
   swarmBountyId: string,
-  // signature: string,
+  taskId: string
 ): Promise<{ statuscode: number; data: { success: boolean; message: string; swarmBountyId?: string } }> {
   console.log("updateAssignedInfoWithIPFS", { stakingKey, prUrl, swarmBountyId });
   console.log({
-    taskId: documentSummarizerTaskID,
+    taskId: taskId,
     stakingKey: stakingKey,
     swarmBountyId: swarmBountyId,
     assignedTo: {
       $elemMatch: {
-        taskId: documentSummarizerTaskID,
+        taskId: taskId,
         stakingKey: stakingKey,
       },
     },
   });
   const result = await TodoModel.findOneAndUpdate(
     {
-      taskId: documentSummarizerTaskID,
+      taskId: taskId,
       stakingKey: stakingKey,
       bountyId: swarmBountyId,
       assignedTo: {
         $elemMatch: {
-          taskId: documentSummarizerTaskID,
+          taskId: taskId,
           stakingKey: stakingKey,
         },
       },
     },
     {
-      $set: { "assignedTo.$.prUrl": prUrl, status: DocumentationStatus.PR_RECEIVED },
+      $set: { "assignedTo.$.prUrl": prUrl, status: Status.PR_RECEIVED },
       $unset: {
         roundNumber: "",
       },
@@ -111,7 +111,7 @@ export async function updateAssignedInfoPrUrl(
   };
 }
 
-export const addRequest = async (req: Request, res: Response) => {
+export const addTodoPR = async (req: Request, res: Response) => {
   const requestBody = verifyRequestBody(req);
   if (!requestBody) {
     res.status(401).json({
@@ -130,7 +130,7 @@ export const addRequest = async (req: Request, res: Response) => {
     return;
   }
 
-  if (!(await isValidStakingKey(documentSummarizerTaskID, requestBody.stakingKey))) {
+  if (!(await isValidStakingKey(signatureData.taskId, requestBody.stakingKey))) {
     res.status(401).json({
       success: false,
       message: "Invalid staking key",
@@ -144,14 +144,14 @@ export const addRequest = async (req: Request, res: Response) => {
 
 export const addPRUrlLogic = async (
   requestBody: { signature: string; stakingKey: string },
-  signatureData: { prUrl: string; swarmBountyId: string },
+  signatureData: { prUrl: string; swarmBountyId: string,taskId: string },
 ) => {
   console.log("prUrl", signatureData.prUrl);
   const result = await updateAssignedInfoPrUrl(
     requestBody.stakingKey,
     signatureData.prUrl,
     signatureData.swarmBountyId,
-    // requestBody.signature,
+    signatureData.taskId,
   );
   if (result.data.swarmBountyId && process.env.NODE_ENV !== "development") {
     await updateSwarmBountyStatus(result.data.swarmBountyId, SwarmBountyStatus.AUDITING);

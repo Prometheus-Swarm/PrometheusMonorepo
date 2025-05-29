@@ -1,68 +1,44 @@
 import { Router, RequestHandler } from "express";
 import { verifyBearerToken } from "../middleware/auth";
 
-/******** Builder *********/
-import { fetchTodo } from "../controllers/feature-builder/worker/fetchTodo";
-import { addPR } from "../controllers/feature-builder/worker/addTodoPR";
-import { checkToDo } from "../controllers/feature-builder/worker/checkTodo";
-import { updateAuditResult } from "../controllers/feature-builder/worker/updateAuditResult";
-import { addAggregatorInfo } from "../controllers/feature-builder/worker/addAggregatorInfo";
-import { addIssuePR } from "../controllers/feature-builder/worker/addIssuePR";
-import { assignIssue } from "../controllers/feature-builder/worker/assignIssue";
-import { fetchIssue } from "../controllers/feature-builder/worker/fetchIssue";
-import { checkIssue } from "../controllers/feature-builder/worker/checkIssue";
-import { getSourceRepo } from "../controllers/feature-builder/worker/getSourceRepo";
-import { addErrorLogToDB, addLogToDB } from "../controllers/feature-builder/worker/addLog";
-import { recordPlannerMessage } from "../controllers/feature-builder/planner/recordMessage";
-import { recordBuilderMessage } from "../controllers/feature-builder/worker/recordMessage";
-/******** Planner ***********/
-import { fetchRequest as fetchPlannerRequest } from "../controllers/feature-builder/planner/fetchRequest";
-import { addRequest as addPlannerRequest } from "../controllers/feature-builder/planner/addRequest";
-import { checkRequest as checkPlannerRequest } from "../controllers/feature-builder/planner/checkRequest";
-import { triggerFetchAuditResult as triggerFetchAuditResultPlanner } from "../controllers/feature-builder/planner/triggerFetchAuditResult";
-import { planner } from "../controllers/feature-builder/planner/startPlanner";
 
+/*************Agent *************/
+
+import { addLogToDB, addErrorLogToDB } from '../controllers/agent/worker/addLogs';
+import { fetchTodo } from '../controllers/agent/worker/fetchTodo';
+import { addRoundNumberRequest } from '../controllers/agent/worker/addRoundNumber';
+import { addDraftRequest } from '../controllers/agent/worker/addTodoDraftPR';
+import { addTodoPR } from '../controllers/agent/worker/addTodoPR';
+// import {addTodoStatus} from '../controllers/agent/worker/addTodoStatus';
+import { checkTodoRequest } from '../controllers/agent/worker/checkTodo';
+import { recordBuilderMessage } from '../controllers/agent/worker/recordBuilderConversation';
 /******** Prometheus Website ***********/
 import { getAssignedTo } from "../controllers/prometheus/getAssignedTo";
 import { classification } from "../controllers/prometheus/classification";
-
-/********** Supporter ***********/
-// import { bindRequest } from "../controllers/supporter/bindRequest";
-// import { fetchRequest as fetchRepoList } from "../controllers/supporter/fetchRequest";
-// import { checkRequest as checkRepoRequest } from "../controllers/supporter/checkRequest";
+import { recordPlannerMessage } from "../controllers/agent/worker/recordPlannerConversation";
 
 const router = Router();
 
-/********** Builder ***********/
-router.post("/builder/fetch-to-do", fetchTodo as RequestHandler);
-router.post("/builder/add-aggregator-info", addAggregatorInfo as RequestHandler);
-router.post("/builder/add-pr-to-to-do", addPR as RequestHandler);
-router.post("/builder/add-issue-pr", addIssuePR as RequestHandler);
-router.post("/builder/check-to-do", checkToDo as RequestHandler);
-router.post("/builder/assign-issue", assignIssue as RequestHandler);
-router.post("/builder/update-audit-result", updateAuditResult as RequestHandler);
-router.post("/builder/fetch-issue", fetchIssue as RequestHandler);
-router.post("/builder/check-issue", checkIssue as RequestHandler);
-router.post("/builder/record-log", addLogToDB as RequestHandler);
-router.post("/builder/record-error-log", addErrorLogToDB as RequestHandler);
-router.get("/builder/get-source-repo/:nodeType/:uuid", getSourceRepo as RequestHandler);
-router.post("/builder/record-message", recordPlannerMessage as RequestHandler);
-router.post("/builder/record-builder-message", recordBuilderMessage as RequestHandler);
+/********** Worker ***********/
+router.post("/worker/record-error-log", addErrorLogToDB as RequestHandler);
+router.post("/worker/record-log", addLogToDB as RequestHandler);
+router.post("/worker/fetch-todo", fetchTodo as RequestHandler);
+router.post("/worker/add-round-number", addRoundNumberRequest as RequestHandler);
+router.post("/worker/add-todo-draft-pr", addDraftRequest as RequestHandler);
+router.post("/worker/add-todo-pr", addTodoPR as RequestHandler);
+// router.post("/worker/add-todo-status", addTodoStatus as RequestHandler);
+router.post("/worker/check-todo", checkTodoRequest as RequestHandler);
+router.post("/worker/record-builder-conversation", recordBuilderMessage as RequestHandler);
+
 
 /********** Planner ***********/
-router.post("/planner/fetch-planner-todo", fetchPlannerRequest as RequestHandler);
-router.post("/planner/add-pr-to-planner-todo", addPlannerRequest as RequestHandler);
-router.post("/planner/check-planner", checkPlannerRequest as RequestHandler);
-router.post("/planner/trigger-fetch-audit-result", triggerFetchAuditResultPlanner as RequestHandler);
-router.post("/planner/start-planner", planner as RequestHandler);
+router.post("/planner/record-planner-converstaion", recordPlannerMessage as RequestHandler);
+
 /*********** Prometheus Website ***********/
 router.get("/prometheus/get-assigned-nodes", getAssignedTo as RequestHandler);
 router.post("/prometheus/classification", verifyBearerToken, classification as RequestHandler);
 
-/****************** Supporter **************/
-// router.post("/supporter/bind-key-to-github", bindRequest as RequestHandler);
-// router.post("/supporter/fetch-repo-list", fetchRepoList as RequestHandler);
-// router.post("/supporter/check-request", checkRepoRequest as RequestHandler);
+
 
 router.get("/hello", (req, res) => {
   res.json({ status: 200, message: "running" });

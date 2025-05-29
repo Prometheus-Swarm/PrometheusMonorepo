@@ -1,12 +1,13 @@
-import { TodoModel, DocumentationStatus } from "../../../models/Todo";
+import { TodoModel, Status } from "../../../models/Todo";
 
 import { Request, Response } from "express";
 import { verifySignature } from "../../../utils/sign";
-import { documentSummarizerTaskID, SwarmBountyStatus } from "../../../config/constant";
+import { SwarmBountyStatus, taskIDs } from "../../../config/constant";
 import { isValidStakingKey } from "../../../utils/taskState";
 import { updateSwarmBountyStatus } from "../../../services/swarmBounty/updateStatus";
+import { getCurrentRound } from "../../../utils/taskState/submissionRound";
 
-function verifyRequestBody(req: Request): { signature: string; stakingKey: string } | null {
+function verifyRequestBody(req: Request): { signature: string; stakingKey: string} | null {
   try {
     console.log("req.body", req.body);
     const signature = req.body.signature as string;
@@ -26,7 +27,7 @@ async function verifySignatureData(
   signature: string,
   stakingKey: string,
   action: string,
-): Promise<{ prUrl: string; swarmBountyId: string } | null> {
+): Promise<{ prUrl: string; swarmBountyId: string | null, taskId: string } | null> {
   try {
     const { data, error } = await verifySignature(signature, stakingKey);
     if (error || !data) {
@@ -37,58 +38,65 @@ async function verifySignatureData(
     console.log("signature payload", { body, stakingKey });
     if (
       !body.taskId ||
-      body.taskId !== documentSummarizerTaskID ||
+      !taskIDs.includes(body.taskId)||
       body.action !== action ||
       !body.prUrl ||
       !body.stakingKey ||
-      !body.swarmBountyId ||
-      body.stakingKey !== stakingKey
+      body.stakingKey !== stakingKey ||
+      !body.swarmBountyId
     ) {
       return null;
     }
-    return { prUrl: body.prUrl, swarmBountyId: body.swarmBountyId };
+    return { prUrl: body.prUrl, swarmBountyId: body.swarmBountyId, taskId: body.taskId };
   } catch {
     return null;
   }
 }
-export async function updateAssignedInfoPrUrl(
+export async function updateAssignedInfoRoundNumber(
   stakingKey: string,
   prUrl: string,
-  swarmBountyId: string,
-  // signature: string,
+  signature: string,
+  roundNumber: number,
+  swarmBountyId: string | null,
+  taskId: string
 ): Promise<{ statuscode: number; data: { success: boolean; message: string; swarmBountyId?: string } }> {
-  console.log("updateAssignedInfoWithIPFS", { stakingKey, prUrl, swarmBountyId });
-  console.log({
-    taskId: documentSummarizerTaskID,
-    stakingKey: stakingKey,
-    swarmBountyId: swarmBountyId,
-    assignedTo: {
-      $elemMatch: {
-        taskId: documentSummarizerTaskID,
-        stakingKey: stakingKey,
+  if (!swarmBountyId) {
+    return {
+      statuscode: 401,
+      data: {
+        success: false,
+        message: "Failed to verify signature",
       },
-    },
+    };
+  }
+  console.log("updateAssignedInfoRoundNumber", { stakingKey, prUrl, signature, roundNumber });
+  console.log({
+    taskId: taskId,
+    stakingKey: stakingKey,
+    prUrl: prUrl,
+    roundNumber: roundNumber,
   });
   const result = await TodoModel.findOneAndUpdate(
     {
-      taskId: documentSummarizerTaskID,
+      taskId: taskId,
       stakingKey: stakingKey,
-      bountyId: swarmBountyId,
       assignedTo: {
         $elemMatch: {
-          taskId: documentSummarizerTaskID,
+          taskId: taskId,
           stakingKey: stakingKey,
+          prUrl: prUrl,
+          roundNumber: { $exists: false },
         },
       },
     },
     {
-      $set: { "assignedTo.$.prUrl": prUrl, status: DocumentationStatus.PR_RECEIVED },
-      $unset: {
-        roundNumber: "",
+      $set: {
+        "assignedTo.$.roundNumber": roundNumber - 1,
+        status: Status.IN_REVIEW,
       },
     },
   )
-    .select("_id")
+    .select("_id bountyId")
     .lean();
   console.log("prUrl update result", result);
 
@@ -97,8 +105,8 @@ export async function updateAssignedInfoPrUrl(
       statuscode: 200,
       data: {
         success: true,
-        message: "PR URL updated",
-        swarmBountyId: swarmBountyId,
+        message: "Round number added",
+        swarmBountyId: result?.bountyId,
       },
     };
   }
@@ -106,12 +114,13 @@ export async function updateAssignedInfoPrUrl(
     statuscode: 401,
     data: {
       success: false,
-      message: "Failed to update PR URL",
+      message: "Failed to add round number",
     },
   };
 }
 
-export const addDraftRequest = async (req: Request, res: Response) => {
+export const addRoundNumberRequest = async (req: Request, res: Response) => {
+  
   const requestBody = verifyRequestBody(req);
   if (!requestBody) {
     res.status(401).json({
@@ -121,7 +130,7 @@ export const addDraftRequest = async (req: Request, res: Response) => {
     return;
   }
 
-  const signatureData = await verifySignatureData(requestBody.signature, requestBody.stakingKey, "add-todo-draft-pr");
+  const signatureData = await verifySignatureData(requestBody.signature, requestBody.stakingKey, "add-round-number");
   if (!signatureData) {
     res.status(401).json({
       success: false,
@@ -130,7 +139,7 @@ export const addDraftRequest = async (req: Request, res: Response) => {
     return;
   }
 
-  if (!(await isValidStakingKey(documentSummarizerTaskID, requestBody.stakingKey))) {
+  if (!(await isValidStakingKey(signatureData.taskId, requestBody.stakingKey))) {
     res.status(401).json({
       success: false,
       message: "Invalid staking key",
@@ -138,20 +147,32 @@ export const addDraftRequest = async (req: Request, res: Response) => {
     return;
   }
 
-  const response = await addPRUrlLogic(requestBody, signatureData);
+  const response = await addRoundNumberLogic(requestBody, signatureData);
   res.status(response.statuscode).json(response.data);
 };
 
-export const addPRUrlLogic = async (
+export const addRoundNumberLogic = async (
   requestBody: { signature: string; stakingKey: string },
-  signatureData: { prUrl: string; swarmBountyId: string },
+  signatureData: { prUrl: string; swarmBountyId: string | null, taskId: string },
 ) => {
-  console.log("prUrl", signatureData.prUrl);
-  const result = await updateAssignedInfoPrUrl(
+  // console.log("prUrl", signatureData.prUrl);
+  const roundNumber = await getCurrentRound(signatureData.taskId);
+  if (roundNumber === null || roundNumber === undefined) {
+    return {
+      statuscode: 401,
+      data: {
+        success: false,
+        message: "Failed to get current round",
+      },
+    };
+  }
+  const result = await updateAssignedInfoRoundNumber(
     requestBody.stakingKey,
     signatureData.prUrl,
+    requestBody.signature,
+    roundNumber,
     signatureData.swarmBountyId,
-    // requestBody.signature,
+    signatureData.taskId
   );
   if (result.data.swarmBountyId && process.env.NODE_ENV !== "development") {
     await updateSwarmBountyStatus(result.data.swarmBountyId, SwarmBountyStatus.AUDITING);

@@ -18,7 +18,7 @@ export async function syncDB() {
     const docs = await DocumentationModel.find();
     console.log("swarmBounties", swarmBounties.length);
     // Create a map of existing specs by swarmBountyId for quick lookup
-    const existingDocs = new Map(docs.map((doc) => [doc.swarmBountyId, doc]));
+    const existingDocs = new Map(docs.map((doc: any) => [doc.swarmBountyId, doc]));
     console.log("existingDocs", existingDocs.size);
     // Process each feature bounty
     for (const bounty of swarmBounties) {

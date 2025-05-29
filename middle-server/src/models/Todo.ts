@@ -2,7 +2,7 @@ import { prop, getModelForClass, modelOptions, Severity } from "@typegoose/typeg
 import { builder247DB } from "../services/database/database";
 import { SwarmBountyType } from "../config/constant";
 
-export enum DocumentationStatus {
+export enum Status {
   INITIALIZED = "initialized",
   IN_PROGRESS = "in_progress",
   DRAFT_PR_RECEIVED = "draft_pr_received",
@@ -20,6 +20,19 @@ enum TodoStatus {
   MERGED = "merged", // PR is merged by leader node
   FAILED = "failed", // Task has failed after maximum retries
 }
+
+// Consolidated Statuses
+// export enum Status {
+//   INITIALIZED = "initialized", // Not yet assigned to a node. Reset to this if anything goes wrong
+//   IN_PROGRESS = "in_progress", // Is assigned to a node, not completed
+//   DRAFT_PR_RECEIVED = "draft_pr_received",
+//   PR_RECEIVED = "pr_received",
+//   IN_REVIEW = "in_review", // PR has been submitted but no audit yet
+//   APPROVED = "approved", // PR passed audit and appeared on the distribution list
+//   MERGED = "merged", // PR is merged by leader node
+//   DONE = "done",
+//   FAILED = "failed", // Task has failed after maximum retries
+// }
 
 class PhaseData {
   @prop({ required: true })
@@ -100,11 +113,11 @@ class Todo {
 
   @prop({
     type: String,
-    enum: [...Object.values(TodoStatus), ...Object.values(DocumentationStatus)],
+    enum: [...Object.values(TodoStatus), ...Object.values(Status)],
     default: TodoStatus.INITIALIZED,
     required: true,
   })
-  public status!: TodoStatus | DocumentationStatus;
+  public status!: TodoStatus | Status;
 }
 
 const TodoModel = getModelForClass(Todo);

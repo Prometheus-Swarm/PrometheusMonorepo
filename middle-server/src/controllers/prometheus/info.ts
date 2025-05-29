@@ -1,9 +1,13 @@
-import { DocumentationModel } from "../../models/Documentation";
 import { Request, Response } from "express";
-import { DocumentationStatus } from "../../models/Documentation";
-
+import { Status, TodoModel } from '../../models/Todo';
 import { SwarmBountyStatus, SwarmBountyType } from "../../config/constant";
 import { getLastRoundValueLength } from "../../utils/taskState/activeNode";
+
+
+// TODO: Fix the endpoints below
+
+
+
 export const info = async (req: Request, res: Response) => {
   const { swarmBountyId, swarmType } = req.query;
 
@@ -16,52 +20,10 @@ export const info = async (req: Request, res: Response) => {
     res.status(400).json({ error: "Invalid swarm type" });
     return;
   }
-  if (swarmType === SwarmBountyType.DOCUMENT_SUMMARIZER) {
-    const { statuscode, data } = await getDocumentationInfo(swarmBountyId as string);
-    res.status(statuscode).json(data);
-    return;
-  }
-  if (swarmType === SwarmBountyType.FIND_BUGS) {
-    const { statuscode, data } = await getFindBugsInfo(swarmBountyId as string);
-    res.status(statuscode).json(data);
-    return;
-  }
-  if (swarmType === SwarmBountyType.BUILD_FEATURE) {
-    const { statuscode, data } = await getBuildFeatureInfo(swarmBountyId as string);
-    res.status(statuscode).json(data);
-    return;
-  }
-  res.status(500).json({ error: "Internal server error" });
-  return;
-};
-// @dummy function
-export const getFindBugsInfo = async (swarmsBountyId: string): Promise<{ statuscode: number; data: any }> => {
-  return {
-    statuscode: 200,
-    data: {
-      success: true,
-      data: {
-        issues: 0,
-        nodes: 0,
-        status: SwarmBountyStatus.IN_PROGRESS,
-      },
-    },
-  };
+  const { statuscode, data } = await getInfo(swarmBountyId as string);
+  res.status(statuscode).json(data);
 };
 
-export const getBuildFeatureInfo = async (swarmsBountyId: string): Promise<{ statuscode: number; data: any }> => {
-  return {
-    statuscode: 200,
-    data: {
-      success: true,
-      data: {
-        issues: 0,
-        nodes: 0,
-        status: SwarmBountyStatus.IN_PROGRESS,
-      },
-    },
-  };
-};
 export const getDocumentationNumberOfNodesTemp = async (): Promise<number> => {
   const documentationTaskId = process.env.DOCUMENT_SUMMARIZER_TASK_ID;
   if (!documentationTaskId) {
@@ -70,20 +32,20 @@ export const getDocumentationNumberOfNodesTemp = async (): Promise<number> => {
   const numberOfNodes = await getLastRoundValueLength(documentationTaskId);
   return numberOfNodes;
 };
-export const getDocumentationInfo = async (swarmsBountyId: string): Promise<{ statuscode: number; data: any }> => {
+export const getInfo = async (swarmsBountyId: string): Promise<{ statuscode: number; data: any }> => {
   try {
     console.log("swarmsBountyId", swarmsBountyId);
-    const documentation = await DocumentationModel.findOne({ swarmBountyId: swarmsBountyId });
-    console.log("documentation", documentation);
-    if (documentation && documentation.assignedTo) {
+    const todo = await TodoModel.findOne({ swarmBountyId: swarmsBountyId });
+    console.log("documentation", todo);
+    if (todo && todo.assignees) {
       const numberOfNodes = await getDocumentationNumberOfNodesTemp();
       let status;
-      if (documentation.status === DocumentationStatus.IN_PROGRESS) {
-        if (documentation.assignedTo.length === 0) {
+      if (todo.status === Status.IN_PROGRESS) {
+        if (todo.assignees.length === 0) {
           status = SwarmBountyStatus.IN_PROGRESS;
         } else {
-          if (documentation.assignedTo[documentation.assignedTo.length - 1].prUrl) {
-            if (documentation.assignedTo[documentation.assignedTo.length - 1].auditResult == true) {
+          if (todo.assignees[todo.assignees.length - 1].prUrl) {
+            if (todo.assignees[todo.assignees.length - 1].approved == true) {
               status = SwarmBountyStatus.COMPLETED;
             } else {
               status = SwarmBountyStatus.AUDITING;
@@ -100,7 +62,7 @@ export const getDocumentationInfo = async (swarmsBountyId: string): Promise<{ st
           data: {
             issues: 1,
             nodes: numberOfNodes,
-            status: documentation.status,
+            status: todo.status,
           },
         },
       };

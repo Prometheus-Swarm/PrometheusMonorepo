@@ -11,7 +11,7 @@ const options = queryString ? "?" + queryString : "";
 // Remove any trailing slash from the base URI
 const cleanBaseUri = baseUri.replace(/\/$/, "");
 
-export const builder247DB = mongoose.createConnection(`${cleanBaseUri}/builder247${options}`);
+export const builder247DB = mongoose.createConnection(`${cleanBaseUri}/new_builder247${options}`);
 export const prometheusDB = mongoose.createConnection(`${cleanBaseUri}/prometheus${options}`);
 
 // Add connection event listeners

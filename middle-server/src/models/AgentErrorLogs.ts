@@ -18,16 +18,19 @@ class ErrorEntry {
   },
   existingConnection: builder247DB,
 })
-class BugFinderErrorLogs {
+class AgentErrorLogs {
   @prop({ required: true })
   public stakingKey!: string;
 
   @prop({ required: true })
   public swarmBountyId!: string;
 
+  @prop({ required: true })
+  public todoUUID!: string;
+
   @prop({ type: () => [ErrorEntry], default: [] })
   public errors!: ErrorEntry[];
 }
 
-const BugFinderErrorLogsModel = getModelForClass(BugFinderErrorLogs);
-export { BugFinderErrorLogs, BugFinderErrorLogsModel };
+const AgentErrorLogsModel = getModelForClass(AgentErrorLogs);
+export { AgentErrorLogs, AgentErrorLogsModel};

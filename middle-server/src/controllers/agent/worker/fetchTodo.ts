@@ -1,29 +1,34 @@
 import { Request, Response } from "express";
 import "dotenv/config";
 
-import { TodoModel, DocumentationStatus } from "../../../models/Todo";
+import { TodoModel, Status } from "../../../models/Todo";
 // import { documentSummarizerTaskID } from "../../config/constant";
 import { isValidStakingKey } from "../../../utils/taskState";
 import { verifySignature } from "../../../utils/sign";
-import { documentSummarizerTaskID, SwarmBountyStatus, SwarmBountyType } from "../../../config/constant";
+import { taskIDs, SwarmBountyStatus, SwarmBountyType } from "../../../config/constant";
 import { updateSwarmBountyStatus } from "../../../services/swarmBounty/updateStatus";
 import { getRoundTime } from "../../../utils/taskState/getRoundTime";
 import { getCurrentRound } from "../../../utils/taskState/submissionRound";
 
 // Check if the user has already completed the task
-async function checkExistingAssignment(stakingKey: string) {
+async function checkExistingAssignment(stakingKey: string, taskId: string): Promise<any> {
   try {
     const result = await TodoModel.findOne({
-      taskId: documentSummarizerTaskID,
-      stakingKey: stakingKey,
-      status: { $nin: [DocumentationStatus.DONE, DocumentationStatus.FAILED] },
+      assignees: {
+        $elemMatch: {
+          taskId: taskId,
+          stakingKey: stakingKey,
+        },
+      },
+      // TODO: CHECK WHEN TASK GOES TO DONE OR FAILED (Currently only going upto PR_RECEIVED)
+      status: { $nin: [Status.DONE, Status.FAILED] },
     }).lean();
 
     if (!result) return null;
 
     // Find the specific assignment entry
     const assignment = result.assignees?.find(
-      (a: any) => a.stakingKey === stakingKey && a.taskId === documentSummarizerTaskID,
+      (a: any) => a.stakingKey === stakingKey && a.taskId === taskId,
     );
 
     return {
@@ -52,7 +57,7 @@ async function verifySignatureData(
   signature: string,
   stakingKey: string,
   action: string,
-): Promise<{ githubUsername: string } | null> {
+): Promise<{ githubUsername: string, taskId: string } | null> {
   try {
     const { data, error } = await verifySignature(signature, stakingKey);
     if (error || !data) {
@@ -63,7 +68,7 @@ async function verifySignatureData(
     console.log({ signature_payload: body });
     if (
       !body.taskId ||
-      body.taskId !== documentSummarizerTaskID ||
+      !taskIDs.includes(body.taskId) ||
       body.action !== action ||
       !body.githubUsername ||
       !body.stakingKey ||
@@ -72,7 +77,7 @@ async function verifySignatureData(
       console.log("bad signature data");
       return null;
     }
-    return { githubUsername: body.githubUsername };
+    return { githubUsername: body.githubUsername, taskId: body.taskId };
   } catch (error) {
     console.log("unexpected signature error", error);
     return null;
@@ -86,19 +91,19 @@ export const preProcessTodoLogic = async () => {
 };
 export const updateFailedTodoTask = async () => {
   const docs = await TodoModel.find({
-    bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER,
     assignedTo: { $size: 5 },
-    status: { $nin: [DocumentationStatus.DONE, DocumentationStatus.FAILED] },
+    // TODO: CHECK WHEN TASK GOES TO DONE OR FAILED (Currently only going upto PR_RECEIVED)
+    status: { $nin: [Status.DONE, Status.FAILED] },
   });
   for (const doc of docs) {
     for (const assignee of doc.assignees ?? []) {
       if (assignee.prUrl) {
-        doc.status = DocumentationStatus.DONE;
+        doc.status = Status.DONE;
         break;
       }
     }
-    if (doc.status !== DocumentationStatus.DONE) {
-      doc.status = DocumentationStatus.FAILED;
+    if (doc.status !== Status.DONE) {
+      doc.status = Status.FAILED;
       if (process.env.NODE_ENV !== "development" && doc.bountyId) {
         await updateSwarmBountyStatus(doc.bountyId, SwarmBountyStatus.FAILED);
       }
@@ -107,7 +112,7 @@ export const updateFailedTodoTask = async () => {
   }
 };
 
-export const fetchRequest = async (req: Request, res: Response) => {
+export const fetchTodo = async (req: Request, res: Response) => {
   const requestBody: { signature: string; stakingKey: string } | null = verifyRequestBody(req);
   if (!requestBody) {
     res.status(401).json({
@@ -126,7 +131,7 @@ export const fetchRequest = async (req: Request, res: Response) => {
     return;
   }
 
-  if (!(await isValidStakingKey(documentSummarizerTaskID, requestBody.stakingKey))) {
+  if (!(await isValidStakingKey(signatureData.taskId, requestBody.stakingKey))) {
     res.status(401).json({
       success: false,
       message: "Invalid staking key",
@@ -139,11 +144,12 @@ export const fetchRequest = async (req: Request, res: Response) => {
 
 export const fetchTodoLogic = async (
   requestBody: { signature: string; stakingKey: string },
-  signatureData: { githubUsername: string },
+  signatureData: { githubUsername: string, taskId: string },
 ): Promise<{ statuscode: number; data: any }> => {
   await preProcessTodoLogic();
-  const existingAssignment = await checkExistingAssignment(requestBody.stakingKey);
+  const existingAssignment = await checkExistingAssignment(requestBody.stakingKey, signatureData.taskId);
   if (existingAssignment) {
+    // TODO: It might get stuck here, if it hasPR but its not being marked failed or completed
     if (existingAssignment.hasPR) {
       return {
         statuscode: 401,
@@ -169,7 +175,7 @@ export const fetchTodoLogic = async (
   }
 
   try {
-    const roundTimeInMS = await getRoundTime(documentSummarizerTaskID);
+    const roundTimeInMS = await getRoundTime(signatureData.taskId);
     if (!roundTimeInMS) {
       return {
         statuscode: 500,
@@ -179,7 +185,7 @@ export const fetchTodoLogic = async (
         },
       };
     }
-    const currentRound = await getCurrentRound(documentSummarizerTaskID);
+    const currentRound = await getCurrentRound(signatureData.taskId);
     if (currentRound === null || currentRound === undefined) {
       return {
         statuscode: 500,
@@ -196,55 +202,54 @@ export const fetchTodoLogic = async (
       {
         // Not assigned to the nodes that have already attempted the task
         $nor: [
-          { status: { $in: [DocumentationStatus.DONE, DocumentationStatus.FAILED] } },
+          { status: { $in: [Status.DONE, Status.FAILED] } },
           { "assignedTo.stakingKey": requestBody.stakingKey },
           { "assignedTo.githubUsername": signatureData.githubUsername },
         ],
-        bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER,
         $or: [
-          // Condition: If Documentation Status is Initialized, then it should be assigned to the user
-          { $and: [{ status: DocumentationStatus.INITIALIZED }] },
-          // Condition: If Documentation Status is IN_PROGRESS, and it takes more than 1 round to be PR_RECEIVED, then it should be assigned to the user
+          // Condition: If Status is Initialized, then it should be assigned to the user
+          { $and: [{ status: Status.INITIALIZED }] },
+          // Condition: If Status is IN_PROGRESS, and it takes more than 1 round to be PR_RECEIVED, then it should be assigned to the user
           {
             $and: [
-              { status: DocumentationStatus.IN_PROGRESS },
+              { status: Status.IN_PROGRESS },
               { updatedAt: { $lt: new Date(Date.now() - roundTimeInMS) } },
             ],
           },
-          // Condition: If Documentation status is DRAFT_PR_RECEIVED, and it takes more than 1 round to be PR_RECEIVED, then it should be assigned to the user
+          // Condition: If status is DRAFT_PR_RECEIVED, and it takes more than 1 round to be PR_RECEIVED, then it should be assigned to the user
           {
             $and: [
-              { status: DocumentationStatus.DRAFT_PR_RECEIVED },
+              { status: Status.DRAFT_PR_RECEIVED },
               { updatedAt: { $lt: new Date(Date.now() - roundTimeInMS) } },
             ],
           },
           {
             $and: [
-              { status: DocumentationStatus.PR_RECEIVED },
+              { status: Status.PR_RECEIVED },
               { updatedAt: { $lt: new Date(Date.now() - roundTimeInMS) } },
             ],
           },
-          // Condition: If Documentation status is IN_REVIEW, and it takes more than 4 rounds to be DONE, then it should be assigned to the new user
+          // Condition: If status is IN_REVIEW, and it takes more than 4 rounds to be DONE, then it should be assigned to the new user
           {
-            $and: [{ status: DocumentationStatus.IN_REVIEW }, { roundNumber: { $lt: currentRound - 4 } }],
+            $and: [{ status: Status.IN_REVIEW }, { roundNumber: { $lt: currentRound - 4 } }],
           },
-          // Condition: If Documentation Assigned to previous task, and it is not done or failed, then it should be assigned to the user
+          // Condition: If Assigned to previous task, and it is not done or failed, then it should be assigned to the user
 
-          { taskId: { $ne: documentSummarizerTaskID } },
+          { taskId: { $ne: signatureData.taskId } },
         ],
       },
       {
         $push: {
           assignedTo: {
             stakingKey: requestBody.stakingKey,
-            taskId: documentSummarizerTaskID,
+            taskId: signatureData.taskId,
             githubUsername: signatureData.githubUsername,
             todoSignature: requestBody.signature,
           },
         },
         $set: {
-          status: DocumentationStatus.IN_PROGRESS,
-          taskId: documentSummarizerTaskID,
+          status: Status.IN_PROGRESS,
+          taskId: signatureData.taskId,
           stakingKey: requestBody.stakingKey,
         },
         $unset: {

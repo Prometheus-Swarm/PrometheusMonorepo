@@ -3,8 +3,6 @@ import router from "./routes/routes";
 import http from "http";
 import morgan from "morgan";
 import { checkConnections } from "./services/database/database";
-import summarizerRouter from "./routes/summarizer";
-import bugFinderRouter from "./routes/bug-finder";
 import prometheusRouter from "./routes/prometheus";
 import starRouter from "./routes/star";
 export const app = express();
@@ -78,8 +76,6 @@ app.get("/", (req: express.Request, res: express.Response) => {
 });
 
 app.use("/api", router);
-app.use("/summarizer", summarizerRouter);
-app.use("/bug-finder", bugFinderRouter);
 app.use("/prometheus", prometheusRouter);
 app.use("/star", starRouter);
 

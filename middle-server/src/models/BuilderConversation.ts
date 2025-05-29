@@ -20,7 +20,7 @@ export class BuilderConversation {
   public githubUsername!: string;
 
   @prop({ required: true })
-  public uuid!: string;
+  public todoUUID!: string;
 
   @prop({ required: true, enum: ["todo", "issue"] })
   public taskType!: "todo" | "issue";
