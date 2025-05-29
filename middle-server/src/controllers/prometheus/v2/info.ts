@@ -6,11 +6,7 @@ import { SwarmBountyStatus, SwarmBountyType } from "../../../config/constant";
 import { SpecModel, SpecStatus } from "../../../models/Spec";
 import { TodoModel, TodoStatus } from "../../../models/Todo";
 
-
-
 // TODO: Fix the endpoints below
-
-
 
 interface ResponseInfo {
   success: boolean;
@@ -43,7 +39,6 @@ export const SwarmBountyStatusSpecStatusMapping = {
   [SpecStatus.IN_PROGRESS]: SwarmBountyStatus.IN_PROGRESS,
   [SpecStatus.INITIALIZED]: SwarmBountyStatus.IN_PROGRESS,
 };
-
 
 export const SwarmBountyStatusTodoStatusMapping = {
   // [TodoStatus.INITIALIZED]: SwarmBountyStatus.PENDING,

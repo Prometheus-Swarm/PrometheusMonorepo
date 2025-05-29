@@ -140,6 +140,4 @@
 //   };
 // };
 
-
-
 // Unncessary as when adding draftPR the status is set to DRAFT_PR_RECEIVED which is equivalent to initialized

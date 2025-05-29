@@ -27,9 +27,7 @@ async function checkExistingAssignment(stakingKey: string, taskId: string): Prom
     if (!result) return null;
 
     // Find the specific assignment entry
-    const assignment = result.assignees?.find(
-      (a: any) => a.stakingKey === stakingKey && a.taskId === taskId,
-    );
+    const assignment = result.assignees?.find((a: any) => a.stakingKey === stakingKey && a.taskId === taskId);
 
     return {
       spec: result,
@@ -57,7 +55,7 @@ async function verifySignatureData(
   signature: string,
   stakingKey: string,
   action: string,
-): Promise<{ githubUsername: string, taskId: string } | null> {
+): Promise<{ githubUsername: string; taskId: string } | null> {
   try {
     const { data, error } = await verifySignature(signature, stakingKey);
     if (error || !data) {
@@ -144,7 +142,7 @@ export const fetchTodo = async (req: Request, res: Response) => {
 
 export const fetchTodoLogic = async (
   requestBody: { signature: string; stakingKey: string },
-  signatureData: { githubUsername: string, taskId: string },
+  signatureData: { githubUsername: string; taskId: string },
 ): Promise<{ statuscode: number; data: any }> => {
   await preProcessTodoLogic();
   const existingAssignment = await checkExistingAssignment(requestBody.stakingKey, signatureData.taskId);
@@ -211,23 +209,14 @@ export const fetchTodoLogic = async (
           { $and: [{ status: Status.INITIALIZED }] },
           // Condition: If Status is IN_PROGRESS, and it takes more than 1 round to be PR_RECEIVED, then it should be assigned to the user
           {
-            $and: [
-              { status: Status.IN_PROGRESS },
-              { updatedAt: { $lt: new Date(Date.now() - roundTimeInMS) } },
-            ],
+            $and: [{ status: Status.IN_PROGRESS }, { updatedAt: { $lt: new Date(Date.now() - roundTimeInMS) } }],
           },
           // Condition: If status is DRAFT_PR_RECEIVED, and it takes more than 1 round to be PR_RECEIVED, then it should be assigned to the user
           {
-            $and: [
-              { status: Status.DRAFT_PR_RECEIVED },
-              { updatedAt: { $lt: new Date(Date.now() - roundTimeInMS) } },
-            ],
+            $and: [{ status: Status.DRAFT_PR_RECEIVED }, { updatedAt: { $lt: new Date(Date.now() - roundTimeInMS) } }],
           },
           {
-            $and: [
-              { status: Status.PR_RECEIVED },
-              { updatedAt: { $lt: new Date(Date.now() - roundTimeInMS) } },
-            ],
+            $and: [{ status: Status.PR_RECEIVED }, { updatedAt: { $lt: new Date(Date.now() - roundTimeInMS) } }],
           },
           // Condition: If status is IN_REVIEW, and it takes more than 4 rounds to be DONE, then it should be assigned to the new user
           {

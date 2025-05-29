@@ -28,7 +28,7 @@ export async function checkToDoAssignment(
   stakingKey: string,
   githubUsername: string,
   prUrl: string,
-  taskId: string
+  taskId: string,
 ): Promise<boolean> {
   try {
     const data = {

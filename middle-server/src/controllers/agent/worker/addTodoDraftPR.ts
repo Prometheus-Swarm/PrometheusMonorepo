@@ -27,7 +27,7 @@ async function verifySignatureData(
   signature: string,
   stakingKey: string,
   action: string,
-): Promise<{ prUrl: string; swarmBountyId: string, taskId: string } | null> {
+): Promise<{ prUrl: string; swarmBountyId: string; taskId: string } | null> {
   try {
     const { data, error } = await verifySignature(signature, stakingKey);
     if (error || !data) {
@@ -145,7 +145,7 @@ export const addDraftRequest = async (req: Request, res: Response) => {
 
 export const addPRUrlLogic = async (
   requestBody: { signature: string; stakingKey: string },
-  signatureData: { prUrl: string; swarmBountyId: string, taskId: string },
+  signatureData: { prUrl: string; swarmBountyId: string; taskId: string },
 ) => {
   console.log("prUrl", signatureData.prUrl);
   const result = await updateAssignedInfoPrUrl(

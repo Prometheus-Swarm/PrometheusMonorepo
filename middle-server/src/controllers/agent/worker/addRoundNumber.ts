@@ -7,7 +7,7 @@ import { isValidStakingKey } from "../../../utils/taskState";
 import { updateSwarmBountyStatus } from "../../../services/swarmBounty/updateStatus";
 import { getCurrentRound } from "../../../utils/taskState/submissionRound";
 
-function verifyRequestBody(req: Request): { signature: string; stakingKey: string} | null {
+function verifyRequestBody(req: Request): { signature: string; stakingKey: string } | null {
   try {
     console.log("req.body", req.body);
     const signature = req.body.signature as string;
@@ -27,7 +27,7 @@ async function verifySignatureData(
   signature: string,
   stakingKey: string,
   action: string,
-): Promise<{ prUrl: string; swarmBountyId: string | null, taskId: string } | null> {
+): Promise<{ prUrl: string; swarmBountyId: string | null; taskId: string } | null> {
   try {
     const { data, error } = await verifySignature(signature, stakingKey);
     if (error || !data) {
@@ -38,7 +38,7 @@ async function verifySignatureData(
     console.log("signature payload", { body, stakingKey });
     if (
       !body.taskId ||
-      !taskIDs.includes(body.taskId)||
+      !taskIDs.includes(body.taskId) ||
       body.action !== action ||
       !body.prUrl ||
       !body.stakingKey ||
@@ -58,7 +58,7 @@ export async function updateAssignedInfoRoundNumber(
   signature: string,
   roundNumber: number,
   swarmBountyId: string | null,
-  taskId: string
+  taskId: string,
 ): Promise<{ statuscode: number; data: { success: boolean; message: string; swarmBountyId?: string } }> {
   if (!swarmBountyId) {
     return {
@@ -120,7 +120,6 @@ export async function updateAssignedInfoRoundNumber(
 }
 
 export const addRoundNumberRequest = async (req: Request, res: Response) => {
-  
   const requestBody = verifyRequestBody(req);
   if (!requestBody) {
     res.status(401).json({
@@ -153,7 +152,7 @@ export const addRoundNumberRequest = async (req: Request, res: Response) => {
 
 export const addRoundNumberLogic = async (
   requestBody: { signature: string; stakingKey: string },
-  signatureData: { prUrl: string; swarmBountyId: string | null, taskId: string },
+  signatureData: { prUrl: string; swarmBountyId: string | null; taskId: string },
 ) => {
   // console.log("prUrl", signatureData.prUrl);
   const roundNumber = await getCurrentRound(signatureData.taskId);
@@ -172,7 +171,7 @@ export const addRoundNumberLogic = async (
     requestBody.signature,
     roundNumber,
     signatureData.swarmBountyId,
-    signatureData.taskId
+    signatureData.taskId,
   );
   if (result.data.swarmBountyId && process.env.NODE_ENV !== "development") {
     await updateSwarmBountyStatus(result.data.swarmBountyId, SwarmBountyStatus.AUDITING);

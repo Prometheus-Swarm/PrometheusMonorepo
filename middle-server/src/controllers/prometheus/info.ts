@@ -1,12 +1,9 @@
 import { Request, Response } from "express";
-import { Status, TodoModel } from '../../models/Todo';
+import { Status, TodoModel } from "../../models/Todo";
 import { SwarmBountyStatus, SwarmBountyType } from "../../config/constant";
 import { getLastRoundValueLength } from "../../utils/taskState/activeNode";
 
-
 // TODO: Fix the endpoints below
-
-
 
 export const info = async (req: Request, res: Response) => {
   const { swarmBountyId, swarmType } = req.query;

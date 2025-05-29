@@ -24,7 +24,13 @@ export const addErrorLog = async (stakingKey: string, swarmBountyId: string, err
   }
 };
 
-export const addLog = async (stakingKey: string, swarmBountyId: string, logMessage: string, logLevel: string, todoUUID: string) => {
+export const addLog = async (
+  stakingKey: string,
+  swarmBountyId: string,
+  logMessage: string,
+  logLevel: string,
+  todoUUID: string,
+) => {
   try {
     const agentLogs = await AgentLogsModel.findOne({ stakingKey, swarmBountyId, todoUUID });
     if (agentLogs) {

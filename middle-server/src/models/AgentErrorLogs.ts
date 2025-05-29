@@ -33,4 +33,4 @@ class AgentErrorLogs {
 }
 
 const AgentErrorLogsModel = getModelForClass(AgentErrorLogs);
-export { AgentErrorLogs, AgentErrorLogsModel};
+export { AgentErrorLogs, AgentErrorLogsModel };
