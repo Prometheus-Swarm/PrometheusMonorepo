@@ -10,7 +10,7 @@ from prometheus_swarm.clients import setup_client
 # Load environment variables
 load_dotenv()
 
-exampleTask = {'title': {'Type': 'File', 'PathToWrite': ['codex-cli', 'README.md'], 'SectionName': ['CLI Overview']}, 'description': 'Create a comprehensive overview section explaining the purpose and key features of the Codex CLI, providing users with a clear understanding of its functionality and value.', 'acceptance_criteria': ['Explain the main purpose of the CLI', 'Highlight key features and capabilities', 'Provide a high-level description of what problems the CLI solves', 'Write in a clear, engaging, and informative style'], 'tools': ['write_file', 'read_file', 'list_directory_contents', 'create_pull_request_legacy'], 'uuid': 'a978aad3-096e-48ec-b133-3eb85968e9c9'}
+exampleTask = {'info': "Create a comprehensive overview section explaining the purpose and key features of the Codex CLI, providing users with a clear understanding of its functionality and value.", 'tools': ['write_file', 'read_file', 'list_directory_contents', 'create_pull_request_legacy'], 'uuid': 'a978aad3-096e-48ec-b133-3eb85968e9c9'}
 def main():
     """Run the todo creator workflow."""
     parser = argparse.ArgumentParser(

@@ -12,7 +12,7 @@ FEATURE_BUILDER_PROMPTS = {
     "implement_todo": (
         "You are working on implementing the following task:\n"
         "{info}\n\n"
-        "All available files: {current_files}\n\n"
+        # "All available files: {current_files}\n\n"
         "IMPORTANT: ALWAYS use relative paths (e.g., 'src/file.py' not '/src/file.py')\n\n"
         "IMPORTANT: Before you begin your task, make sure a test runner is installed and configured correctly.\n"
         "IMPORTANT: If this is a Typescript project and a test framework is not already configured, use Vitest.\n"
@@ -33,7 +33,7 @@ FEATURE_BUILDER_PROMPTS = {
         "You are creating a pull request for the following task:\n"
         "Task Description:\n"
         "{info}\n\n"
-        "Available files: {current_files}\n\n"
+        # "Available files: {current_files}\n\n"
         "IMPORTANT: Always use relative paths (e.g., 'src/file.py' not '/src/file.py')\n\n"
         "IMPORTANT: Ignore tests that require an end to end test runner like playwright or cypress\n"
         "Steps to create the pull request:\n"
