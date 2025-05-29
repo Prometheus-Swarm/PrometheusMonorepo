@@ -60,6 +60,7 @@ class TodoCreatorWorkflow(Workflow):
         source_url: str,
         fork_url: str,
         task_spec: Dict[str, Any],
+        task_uuid: str,
         previous_phasesData: List[PhaseData],
         error_message: str,
         bounty_id: str,
@@ -191,17 +192,16 @@ class TodoCreatorWorkflow(Workflow):
         """Generate tasks for a specific issue."""
         try:
             self.setup()
-            tasks_data = self._generate_and_validate_tasks()
-            if not tasks_data:
+            task_data = self._generate_and_validate_tasks()
+            if not task_data:
                 return None
 
-            self._process_task_dependencies(tasks_data)
-            self._save_tasks_to_mongodb(tasks_data)
+            self._update_task_in_mongodb(task_data)
 
             return {
                 "success": True,
-                "message": f"Created {len(tasks_data)} tasks for the feature",
-                "data": {"tasks": tasks_data},
+                "message": f"Created {len(task_data)} tasks for the feature",
+                "data": {"tasks": task_data},
             }
         except Exception as e:
             log_error(e, "Task decomposition workflow failed")
@@ -215,22 +215,16 @@ class TodoCreatorWorkflow(Workflow):
 
     def _generate_and_validate_tasks(self) -> Optional[List[Dict[str, Any]]]:
         """Generate and validate tasks through the decomposition phase."""
-        decompose_phase = phases.TaskDecompositionPhase(workflow=self, bounty_type=self.bounty_type)
-        decomposition_result = decompose_phase.execute()
+        task_generation_phase = phases.TaskRegenerationPhase(workflow=self, bounty_type=self.bounty_type)
+        task_generation_result = task_generation_phase.execute()
 
-        if not decomposition_result or not decomposition_result.get("success"):
-            log_error(Exception(decomposition_result.get("error", "No result")), "Task decomposition failed")
+        if not task_generation_result or not task_generation_result.get("success"):
+            log_error(Exception(task_generation_result.get("error", "No result")), "Task decomposition failed")
             return None
 
-        tasks_data = decomposition_result["data"].get("tasks", [])
-        log_key_value("Created Tasks", tasks_data)
-        if not tasks_data:
-            log_error(Exception("No tasks generated"), "Task decomposition failed")
-            return None
-
-        log_key_value("Tasks Created Number", len(tasks_data))
-        self.context["subtasks"] = tasks_data
-        return tasks_data
+        task_data = task_generation_result["data"].get("tasks", [])
+        log_key_value("Created Tasks", task_data)
+        return task_data
 
     def _decode_decomposition_tasks_result(self, tasks_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Decode the decomposition result."""
@@ -270,45 +264,9 @@ class TodoCreatorWorkflow(Workflow):
                         )
                         task["dependency_tasks"].remove(dep)
 
-    def _save_tasks_to_mongodb(self, tasks_data: List[Dict[str, Any]]) -> None:
-        """Save tasks to MongoDB."""
-        for task in tasks_data:
-            try:
-                task["phases_data"] = self._get_phase_data(task["info"], task["tools"], task["acceptance_criteria"])
-
-                log_key_value("Saving Task to MongoDB", {
-                    "task_info": task["info"],
-                    "task_uuid": task["uuid"],
-        
-                })
-
-                task_model = NewTaskModel(
-                    acceptanceCriteria=task["acceptance_criteria"],
-                    repoOwner=self.context["repo_owner"],
-                    repoName=self.context["repo_name"],
-                    phasesData=task["phases_data"],
-                    dependencyTasks=task["dependency_tasks"],
-                    uuid=task["uuid"],
-                    bountyId=self.context["bounty_id"],
-                    bountyType=self.bounty_type,
-                )
-                result = insert_task_to_mongodb(task_model)
-                
-                if result:
-                    log_key_value("Successfully saved task to MongoDB", {
-                        "task_uuid": task["uuid"],
-                    })
-                else:
-                    log_error(
-                        Exception("Failed to save task to MongoDB"),
-                        f"Task {task.get('info', 'unknown')} with UUID {task.get('uuid', 'unknown')} was not saved"
-                    )
-            except Exception as e:
-                log_error(
-                    e,
-                    f"Failed to save task {task.get('info', 'unknown')} "
-                    f"with UUID {task.get('uuid', 'unknown')}"
-                )
+    def _update_task_in_mongodb(self, task_data: List[Dict[str, Any]]) -> None:
+        """Update the task in MongoDB."""
+        insert_task_to_mongodb(task_data)
 
     def generate_system_prompts(self, issues: List[Dict[str, Any]], tasks: List[List[Dict[str, Any]]]) -> Optional[Dict[str, Any]]:
         """Generate system prompts for the workflow."""
