@@ -52,8 +52,9 @@ class RepoSummarizerWorkflow(Workflow):
     def __init__(
         self,
         client,
-        prompts,
         repo_url,
+        phasesData,
+        PROMPTS,
         podcall_signature=None,
         task_id=None,
         tools=None,
@@ -66,14 +67,17 @@ class RepoSummarizerWorkflow(Workflow):
 
         super().__init__(
             client=client,
-            prompts=prompts,
+            prompts=PROMPTS,
             repo_url=repo_url,
             repo_owner=repo_owner,
             repo_name=repo_name,
             podcall_signature=podcall_signature,
             task_id=task_id,
         )
+        self.phasesData = phasesData
         self.tools = tools
+        self._phase_data_setup()
+
     def submit_draft_pr(self, pr_url):
         """Submit the draft PR."""
         try:
@@ -95,12 +99,9 @@ class RepoSummarizerWorkflow(Workflow):
                 "data": None,
             }
 
-    def setup(self):
-        """Set up repository and workspace."""
+    def _token_check(self):
         check_required_env_vars(["GITHUB_TOKEN", "GITHUB_USERNAME"])
         validate_github_auth(os.getenv("GITHUB_TOKEN"), os.getenv("GITHUB_USERNAME"))
-
-        # Get the default branch from GitHub
         try:
             gh = Github(os.getenv("GITHUB_TOKEN"))
             self.context["repo_full_name"] = (
@@ -115,8 +116,9 @@ class RepoSummarizerWorkflow(Workflow):
         except Exception as e:
             log_error(e, "Failed to get default branch, using 'main'")
             self.context["base"] = "main"
-
-        # Set up repository directory
+    
+    def _repository_setup(self):
+        """Set up repository and workspace."""
         setup_result = setup_repository(
             self.context["repo_url"],
             github_token=os.getenv("GITHUB_TOKEN"),
@@ -141,6 +143,20 @@ class RepoSummarizerWorkflow(Workflow):
                 "message": "Failed to build tools setup",
                 "data": None,
             }
+    def _phase_data_setup(self):
+        """Set up phases with data from MongoDB format."""
+        # Update PROMPTS with the prompts from phasesData
+
+
+        # Initialize phases with tools
+        self.branch_phase = phases.BranchCreationPhase(workflow=self, tools=self.phasesData[0]["tools"])
+        self.create_pull_request_phase = phases.CreatePullRequestPhase(workflow=self, tools=self.phasesData[1]["tools"])
+        self.consolidated_phase = phases.ConsolidatedPhase(workflow=self, tools=self.phasesData[2]["tools"])
+
+    def setup(self):
+        self._token_check()
+        self._repository_setup()
+        self._phase_data_setup()
 
     def build_tools_setup(self):
         index = index_repo(Path(self.context["repo_path"]))
@@ -158,11 +174,8 @@ class RepoSummarizerWorkflow(Workflow):
 
     def run(self):
         self.setup()
-        # Create a feature branch
-        log_section("CREATING FEATURE BRANCH")
-        branch_phase = phases.BranchCreationPhase(workflow=self)
-        branch_result = branch_phase.execute()
-
+        log_section("#1 Branch Creation")
+        branch_result = self.branch_phase.execute()
         if not branch_result or not branch_result.get("success"):
             log_error(Exception("Branch creation failed"), "Branch creation failed")
             return {
@@ -170,15 +183,14 @@ class RepoSummarizerWorkflow(Workflow):
                 "message": "Branch creation failed",
                 "data": None,
             }
-
-        # Store branch name in context
         self.context["head"] = branch_result["data"]["branch_name"]
-        log_key_value("Branch created", self.context["head"])
+
         try:
+            log_section("#2 Commit and Push")
             commit_and_push(message="empty commit", allow_empty=True)
+            log_section("#3 Create Draft Pull Request")
             draft_pr_result = self.create_pull_request()
             if draft_pr_result.get("success"):
-                print("DRAFT PR RESULT", draft_pr_result)
                 self.submit_draft_pr(draft_pr_result.get("data").get("pr_url"))
             else:
                 return {
@@ -194,6 +206,7 @@ class RepoSummarizerWorkflow(Workflow):
                 "data": None,
             }
         try:
+            log_section("#4 Consolidated Phase")
             consolidated_phase_result = self.consolidated_phase()
             if not consolidated_phase_result or not consolidated_phase_result.get("success"):
                 log_error(Exception("Consolidated phase failed"), "Consolidated phase failed")
@@ -211,8 +224,8 @@ class RepoSummarizerWorkflow(Workflow):
                 "data": None,
             }
         try:
-            final_pull_request_result = self.create_pull_request()
-            return final_pull_request_result
+            production_pr_result = self.create_pull_request()
+            return production_pr_result
         except Exception as e:
             log_error(e, "Failed to create pull request")
             return {
@@ -223,8 +236,7 @@ class RepoSummarizerWorkflow(Workflow):
     def consolidated_phase(self):
         """Create a pull request for the README file."""
         try:
-            consolidated_phase = phases.ConsolidatedPhase(workflow=self, tools=self.tools)
-            return consolidated_phase.execute()
+            return self.consolidated_phase.execute()
         except Exception as e:
             log_error(e, "Failed to create pull request")
             return {
@@ -232,6 +244,16 @@ class RepoSummarizerWorkflow(Workflow):
                 "message": "Failed to create pull request",
                 "data": None,
             }
+    def clean_prompt_string(self, prompt: str) -> str:
+        """Clean up double curly braces in prompt strings to single curly braces.
+        
+        Args:
+            prompt (str): The prompt string that may contain double curly braces
+            
+        Returns:
+            str: The cleaned prompt string with single curly braces
+        """
+        return prompt.replace("{{", "{").replace("}}", "}")
 
     def create_pull_request(self):
         """Create a pull request for the README file."""
@@ -245,15 +267,11 @@ class RepoSummarizerWorkflow(Workflow):
             self.context["description"] = (
                 f"This PR adds a README file for the {self.context['repo_name']} repository."
             )
-
             log_key_value(
                 "Creating PR",
                 f"from {self.context['head']} to {self.context['base']}",
             )
-
-            print("CONTEXT", self.context)
-            create_pull_request_phase = phases.CreatePullRequestPhase(workflow=self)
-            return create_pull_request_phase.execute()
+            return self.create_pull_request_phase.execute()
         except Exception as e:
             log_error(e, "Pull request creation workflow failed")
             return {
