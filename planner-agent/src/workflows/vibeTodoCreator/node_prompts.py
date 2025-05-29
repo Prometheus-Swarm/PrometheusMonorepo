@@ -27,6 +27,7 @@ FEATURE_BUILDER_PROMPTS = {
         "3. Follow best practices for the language/framework\n"
         "4. Handle edge cases and errors appropriately\n"
         "5. Ensure all tests pass\n"
+        "6. Generate Appropriate .gitignore file\n"
         "STOP after implementing the task, do not create a pull request."
     ),
     "create_pr": (

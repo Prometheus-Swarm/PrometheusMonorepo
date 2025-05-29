@@ -31,37 +31,17 @@ def main():
         required=True,
         help="Fork repository URL (e.g., https://github.com/fork-owner/repo)",
     )
-    parser.add_argument(
-        "--output",
-        type=str,
-        default="todos.json",
-        help="Output JSON file path (default: todos.json)",
-    )
-    parser.add_argument(
-        "--model",
-        type=str,
-        default="anthropic",
-        choices=["anthropic", "openai", "xai"],
-        help="Model provider to use (default: anthropic)",
-    )
-    parser.add_argument(
-        "--task-spec",
-        type=str,
-        required=True,
-        help="Description of the task to implement",
-    )
-    args = parser.parse_args()
+
 
     # Initialize client
-    client = setup_client(args.model)
-
+    client = setup_client("anthropic")
     # Run the todo creator workflow
     workflow = TodoCreatorWorkflow(
         client=client,
         prompts=PROMPTS,
-        source_url=args.repo,
-        fork_url=args.fork,
-        task_spec=args.task_spec,
+        source_url="https://github.com/Prometheus-Swarm/prometheus-test",
+        fork_url="https://github.com/Prometheus-Swarm/prometheus-test",
+        issue_spec="Please create a new coingekko api endpoint feature for the project",
         bounty_id=str(uuid.uuid4()),
         bounty_type=SwarmBountyType.BUILD_FEATURE,
     )
@@ -108,7 +88,7 @@ def main_for_docs():
     #     required=True,
     #     help="Description of the issue to implement",
     # )
-    args = parser.parse_args()
+    # args = parser.parse_args()
 
     # Initialize client
     client = setup_client(args.model)
