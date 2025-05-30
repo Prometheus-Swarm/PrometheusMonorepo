@@ -223,7 +223,7 @@ def insert_system_prompt_to_mongodb(system_prompt: SystemPromptModel) -> bool:
 
 
 if __name__ == "__main__":
-    task = TaskModel(
+    task = NewTaskModel(
         title="Test Task",
         description="This is a test task",
         acceptanceCriteria="Test acceptance criteria",
@@ -241,12 +241,12 @@ if __name__ == "__main__":
     insert_issue_to_mongodb(issue)
 
 
-def update_task_phaseData(task_uuid: str, phaseData: List[PhaseData]) -> bool:
+def update_task_phaseData(task_uuid: str, phasesData: List[PhaseData]) -> bool:
     try:
         # Update the task
         result = todos_collection.update_one(
             {"uuid": task_uuid},
-            {"$set": {"phaseData": phaseData}}
+            {"$set": {"phasesData": phasesData}}
         )
         return result.acknowledged
     except ConnectionFailure:

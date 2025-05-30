@@ -193,6 +193,7 @@ export const fetchTodoLogic = async (
       data: {
         success: true,
         data: {
+          // Phases Data is provided here
           phasesData: existingAssignment.todo.phasesData,
           todo_uuid: existingAssignment.todo.uuid,
           issue_uuid: existingAssignment.todo.issueUuid,

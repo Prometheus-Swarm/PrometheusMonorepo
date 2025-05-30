@@ -15,12 +15,9 @@ from prometheus_swarm.workflows.utils import (
     get_current_files,
 )
 from .utils import (
-    NewTaskModel,
     PhaseData,
-    insert_task_to_mongodb,
-    SystemPromptModel,
-    insert_system_prompt_to_mongodb,
     SwarmBountyType,
+    update_task_phaseData,
 )
 from src.workflows.vibeTodoCreator.node_prompts import FEATURE_BUILDER_PROMPTS, DOCUMENT_SUMMARIZER_PROMPTS, RECOMMENDED_TOOLS_FOR_FEATURE_BUILDER, RECOMMENDED_TOOLS_FOR_DOCUMENT_SUMMARIZER
 
@@ -89,6 +86,7 @@ class TodoCreatorWorkflow(Workflow):
         self.context["error_message"] = error_message
         self.context["task_spec"] = task_spec
         self.context["toolsNames"] = get_all_definitions()
+        
 
     def setup(self) -> None:
         """Set up repository and workspace."""
@@ -192,16 +190,16 @@ class TodoCreatorWorkflow(Workflow):
         """Generate tasks for a specific issue."""
         try:
             self.setup()
-            task_data = self._generate_and_validate_tasks()
-            if not task_data:
+            phaseData = self._generate_and_validate_tasks()
+            if not phaseData:
                 return None
 
-            self._update_task_in_mongodb(task_data)
+            self._update_task_in_mongodb(self.task_uuid, phaseData)
 
             return {
                 "success": True,
-                "message": f"Created {len(task_data)} tasks for the feature",
-                "data": {"tasks": task_data},
+                "message": f"Created {len(phaseData)} tasks for the feature",
+                "data": {"phaseData": phaseData},
             }
         except Exception as e:
             log_error(e, "Task decomposition workflow failed")
@@ -264,65 +262,9 @@ class TodoCreatorWorkflow(Workflow):
                         )
                         task["dependency_tasks"].remove(dep)
 
-    def _update_task_in_mongodb(self, task_data: List[Dict[str, Any]]) -> None:
+    def _update_task_in_mongodb(self, task_uuid: str, phasesData: List[PhaseData]) -> None:
         """Update the task in MongoDB."""
-        insert_task_to_mongodb(task_data)
-
-    def generate_system_prompts(self, issues: List[Dict[str, Any]], tasks: List[List[Dict[str, Any]]]) -> Optional[Dict[str, Any]]:
-        """Generate system prompts for the workflow."""
-        try:
-            self._setup_system_prompt_context(issues, tasks)
-            system_prompt_result = self._execute_system_prompt_generation()
-            
-            if system_prompt_result and system_prompt_result.get("success"):
-                self._save_system_prompt(system_prompt_result["data"]["prompt"])
-            
-            return system_prompt_result
-        except Exception as e:
-            log_error(e, "System prompt generation workflow failed")
-            return {
-                "success": False,
-                "message": f"System prompt generation workflow failed: {str(e)}",
-                "data": {"prompt": None},
-            }
-
-
-
-
-
-    def check_circular_dependency(
-        self, task_uuid: str, dependency_tasks: List[str], all_tasks: List[Dict[str, Any]]
-    ) -> bool:
-        """Check if adding dependencies would create a circular dependency."""
-        visited = set()
-        path = set()
-
-        def has_cycle(current_uuid: str) -> bool:
-            if current_uuid in path:
-                return True
-            if current_uuid in visited:
-                return False
-
-            visited.add(current_uuid)
-            path.add(current_uuid)
-
-            current_task = next((t for t in all_tasks if t["uuid"] == current_uuid), None)
-            if current_task:
-                for dep_uuid in current_task.get("dependency_tasks", []):
-                    if has_cycle(dep_uuid):
-                        return True
-
-            path.remove(current_uuid)
-            return False
-
-        current_task = next((t for t in all_tasks if t["uuid"] == task_uuid), None)
-        if current_task:
-            original_deps = current_task.get("dependency_tasks", [])
-            current_task["dependency_tasks"] = dependency_tasks
-            has_circular = has_cycle(task_uuid)
-            current_task["dependency_tasks"] = original_deps
-            return has_circular
-        return False
+        update_task_phaseData(task_uuid, phasesData)
 
     def _get_phase_data(self, info:str, tools:List[str], acceptance_criteria:List[str]) -> List[PhaseData]:
         """Get the phase data for the task."""
