@@ -1,14 +1,14 @@
-from src.server.create_app import create_app
+from .create_app import create_app
 import os
 from flask import request, jsonify
 from prometheus_swarm.utils.logging import logger, swarm_bounty_id_var
 from prometheus_swarm.clients import setup_client
-from src.workflows.todocreator.workflow import TodoCreatorWorkflow
-from src.workflows.todocreator.prompts import PROMPTS
+from ..workflows.vibeTodoCreator.workflow import TodoCreatorWorkflow 
+from ..workflows.vibeTodoCreator.prompts import PROMPTS
 from prometheus_swarm.utils.logging import log_error
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor
-from prometheus_swarm.workflows.todocreator.utils import SwarmBountyType
+from ..workflows.vibeTodoCreator.utils import SwarmBountyType
 # from src.workflows.audit.workflow import AuditWorkflow
 # from src.workflows.audit.prompts import PROMPTS as AUDIT_PROMPTS
 
@@ -131,4 +131,18 @@ def create_plan():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
+    
+    # Test plan creation
+    test_data = {
+        "sourceUrl": "https://github.com/Prometheus-Swarm/prometheus-test",
+        "forkUrl": "https://github.com/Prometheus-Swarm/prometheus-test",
+        "issueSpec": "Please create a new coingekko api endpoint feature for the project",
+        "bountyId": "test-bounty-123",
+        "bountyType": "BUILD_FEATURE"
+    }
+    
+    # Create a test request context
+    with app.test_request_context(json=test_data):
+        create_plan()
+    
     app.run(host="0.0.0.0", port=port, debug=True)
