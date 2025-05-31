@@ -3,9 +3,15 @@ import { BuilderErrorLogsModel } from "../../../models/BuilderErrorLogs";
 import { BuilderLogsModel } from "../../../models/BuilderLogs";
 import { verifySignature } from "../../../utils/sign";
 
-export const addErrorLog = async (stakingKey: string, swarmBountyId: string, error: string, taskId: string) => {
+export const addErrorLog = async (
+  stakingKey: string,
+  swarmBountyId: string,
+  error: string,
+  taskId: string,
+  todoUUID: string,
+) => {
   try {
-    const builderErrorLogs = await BuilderErrorLogsModel.findOne({ stakingKey, swarmBountyId });
+    const builderErrorLogs = await BuilderErrorLogsModel.findOne({ stakingKey, swarmBountyId, todoUUID });
     if (builderErrorLogs) {
       builderErrorLogs.errors.push({ message: error, timestamp: new Date() });
       await builderErrorLogs.save();
@@ -14,6 +20,7 @@ export const addErrorLog = async (stakingKey: string, swarmBountyId: string, err
         stakingKey,
         swarmBountyId,
         taskId,
+        todoUUID,
         errors: [{ message: error, timestamp: new Date() }],
       });
       await newBuilderErrorLogs.save();
@@ -30,9 +37,10 @@ export const addLog = async (
   logMessage: string,
   logLevel: string,
   taskId: string,
+  todoUUID: string,
 ) => {
   try {
-    const builderLogs = await BuilderLogsModel.findOne({ stakingKey, swarmBountyId });
+    const builderLogs = await BuilderLogsModel.findOne({ stakingKey, swarmBountyId, todoUUID });
     if (builderLogs) {
       builderLogs.logs.push({ level: logLevel, message: logMessage, timestamp: new Date() });
       await builderLogs.save();
@@ -41,6 +49,7 @@ export const addLog = async (
         stakingKey,
         swarmBountyId,
         taskId,
+        todoUUID,
         logs: [{ level: logLevel, message: logMessage, timestamp: new Date() }],
       });
       await newBuilderLogs.save();
@@ -53,7 +62,7 @@ export const addLog = async (
 
 export const addErrorLogToDB = async (req: Request, res: Response) => {
   try {
-    const { stakingKey, swarmBountyId, error: errorMessage, signature } = req.body;
+    const { stakingKey, swarmBountyId, error: errorMessage, signature, todoUUID } = req.body;
 
     // Verify Signature
     const { data, error } = await verifySignature(signature, stakingKey);
@@ -69,12 +78,13 @@ export const addErrorLogToDB = async (req: Request, res: Response) => {
     const existingFailedInfo = await BuilderErrorLogsModel.findOne({
       stakingKey,
       "errors.message": errorMessage,
+      todoUUID,
     });
     if (existingFailedInfo) {
       res.status(200).json({ message: "Failed info already exists" });
       return;
     }
-    await addErrorLog(stakingKey, swarmBountyId, errorMessage, parsedData.taskId);
+    await addErrorLog(stakingKey, swarmBountyId, errorMessage, parsedData.taskId, todoUUID);
     res.status(200).json({ message: "Failed info added" });
   } catch (err) {
     console.error("Error in addErrorLogToDB:", err);
@@ -84,7 +94,7 @@ export const addErrorLogToDB = async (req: Request, res: Response) => {
 
 export const addLogToDB = async (req: Request, res: Response) => {
   try {
-    const { stakingKey, swarmBountyId, logMessage, logLevel, signature } = req.body;
+    const { stakingKey, swarmBountyId, logMessage, logLevel, signature, todoUUID } = req.body;
 
     console.log("addLogToDB", { stakingKey, swarmBountyId, logMessage, logLevel, signature });
     // Verify Signature
@@ -102,12 +112,13 @@ export const addLogToDB = async (req: Request, res: Response) => {
     const existingFailedInfo = await BuilderLogsModel.findOne({
       stakingKey,
       "logs.message": logMessage,
+      todoUUID,
     });
     if (existingFailedInfo) {
       res.status(200).json({ message: "logMessage already exists" });
       return;
     }
-    await addLog(stakingKey, swarmBountyId, logMessage, logLevel, parsedData.taskId);
+    await addLog(stakingKey, swarmBountyId, logMessage, logLevel, parsedData.taskId, todoUUID);
     res.status(200).json({ message: "logMessage added" });
   } catch (err) {
     console.error("Error in addLogToDB:", err);

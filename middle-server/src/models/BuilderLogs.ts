@@ -29,6 +29,9 @@ class BuilderLogs {
   @prop({ required: true })
   public swarmBountyId!: string;
 
+  @prop({ required: true })
+  public todoUUID!: string;
+
   @prop({ type: () => [LogEntry], default: [] })
   public logs!: LogEntry[];
 }

@@ -25,6 +25,9 @@ class BuilderErrorLogs {
   @prop({ required: true })
   public swarmBountyId!: string;
 
+  @prop({ required: true })
+  public todoUUID!: string;
+
   @prop({ type: () => [ErrorEntry], default: [] })
   public errors!: ErrorEntry[];
 }
