@@ -15,7 +15,9 @@ from prometheus_swarm.workflows.utils import (
     get_current_files,
 )
 from src.workflows.vibeTodoCreator.utils import (
+    IssueModel,
     NewTaskModel,
+    insert_issue_to_mongodb,
     insert_task_to_mongodb,
     SystemPromptModel,
     insert_system_prompt_to_mongodb,
@@ -286,6 +288,19 @@ class TodoCreatorWorkflow(Workflow):
                     "Issue generation failed",
                 )
                 return None
+            for issue in generate_issues_result["data"]["issues"]:
+                issue_model = IssueModel(
+                    title=issue["title"],
+                    description=issue["description"],
+                    repoOwner=self.context["repo_owner"],
+                    repoName=self.context["repo_name"],
+                    uuid=issue["uuid"],
+                    bountyId=self.context["bounty_id"],
+                    forkOwner=self.context["fork_owner"],
+                    forkUrl=self.context["fork_url"],
+                    bountyType=SwarmBountyType.BUILD_FEATURE,
+                )
+                insert_issue_to_mongodb(issue_model)
             return generate_issues_result
         except Exception as e:
             log_error(e, "Issue generation workflow failed")
@@ -424,6 +439,7 @@ class TodoCreatorWorkflow(Workflow):
                     uuid=task.get("uuid"),
                     bountyId=self.context["bounty_id"],
                     bountyType=self.bounty_type,
+                    issueUuid=issue_uuid,
                 )
                 result = insert_task_to_mongodb(task_model)
                 

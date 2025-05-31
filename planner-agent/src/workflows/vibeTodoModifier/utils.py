@@ -117,6 +117,7 @@ class IssueModel(BaseModel):
     uuid: str = Field(
         default_factory=lambda: str(uuid.uuid4()), description="Unique identifier"
     )
+    issueUuid: str = Field(..., description="Issue UUID")   
     forkOwner: str = Field(..., description="Fork owner")
     forkUrl: str = Field(..., description="Fork URL")
     repoOwner: str = Field(..., description="Repository owner")

@@ -193,7 +193,6 @@ export const fetchTodoLogic = async (
       data: {
         success: true,
         data: {
-          // Phases Data is provided here
           phasesData: existingAssignment.todo.phasesData,
           todo_uuid: existingAssignment.todo.uuid,
           issue_uuid: existingAssignment.todo.issueUuid,
@@ -214,6 +213,8 @@ export const fetchTodoLogic = async (
       bountyType: SwarmBountyType.BUILD_FEATURE,
     }).sort({ createdAt: 1 });
 
+    console.log("Found in-progress issues:", inProgressIssues.length);
+
     if (inProgressIssues.length === 0) {
       return {
         statuscode: 409,
@@ -233,6 +234,8 @@ export const fetchTodoLogic = async (
         uniqueBountyIssues.add(issue.uuid);
       }
     }
+
+    console.log("Unique bounty issues:", Array.from(uniqueBountyIssues));
 
     // 3. Use aggregation to find eligible todos across all unique bounty issues
     const eligibleTodos = await TodoModel.aggregate([
@@ -320,6 +323,24 @@ export const fetchTodoLogic = async (
         $limit: 1,
       },
     ]);
+
+    console.log("Eligible todos found:", eligibleTodos.length);
+    if (eligibleTodos.length === 0) {
+      console.log("No eligible todos found. Checking raw todos...");
+      const rawTodos = await TodoModel.find({
+        issueUuid: { $in: Array.from(uniqueBountyIssues) },
+        status: TodoStatus.INITIALIZED,
+      });
+      console.log("Raw todos found:", rawTodos.length);
+      if (rawTodos.length > 0) {
+        console.log("Sample todo:", {
+          uuid: rawTodos[0].uuid,
+          status: rawTodos[0].status,
+          dependencyTasks: rawTodos[0].dependencyTasks,
+          issueUuid: rawTodos[0].issueUuid,
+        });
+      }
+    }
 
     if (eligibleTodos.length === 0) {
       return {
@@ -426,3 +447,21 @@ export const fetchTodoLogic = async (
     };
   }
 };
+
+export const test = async () => {
+  const response = await fetchTodoLogic(
+    {
+      signature: "0x1234567890123456789012345678901234567890",
+      stakingKey: "0x1234567890123456789012345678901234567890",
+      pubKey: "0x1234567890123456789012345678901234567890",
+    },
+    {
+      githubUsername: "test",
+      roundNumber: 1,
+      taskId: "test-task",
+    },
+  );
+  console.log(response);
+};
+
+test();

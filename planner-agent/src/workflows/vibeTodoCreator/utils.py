@@ -63,7 +63,7 @@ class NewTaskModel(BaseModel):
     repoOwner: str = Field(..., description="Repository owner")
     repoName: str = Field(..., description="Repository name")
     phasesData: List[PhaseData] = Field(..., description="Phases data with prompts and tools")
-
+    issueUuid: str = Field(..., description="Issue UUID")
     assignedTo: List[TaskAssignedInfo] = Field(
         default=[], description="List of assigned agents"
     )
