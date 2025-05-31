@@ -10,6 +10,7 @@ interface RecordMessageRequest {
   taskType: "todo" | "issue";
   taskStage: "task" | "audit";
   prUrl?: string;
+  todoUUID?: string;
 }
 
 export const recordBuilderMessage = async (req: Request, res: Response): Promise<void> => {
