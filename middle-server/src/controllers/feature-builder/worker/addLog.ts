@@ -96,7 +96,7 @@ export const addLogToDB = async (req: Request, res: Response) => {
   try {
     const { stakingKey, swarmBountyId, logMessage, logLevel, signature, todoUUID } = req.body;
 
-    console.log("addLogToDB", { stakingKey, swarmBountyId, logMessage, logLevel, signature });
+    console.log("addLogToDB", { stakingKey, swarmBountyId, logMessage, logLevel, signature, todoUUID });
     // Verify Signature
     const { data, error } = await verifySignature(signature, stakingKey);
     if (error || !data) {
