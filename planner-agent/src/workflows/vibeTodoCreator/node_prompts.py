@@ -121,7 +121,6 @@ RECOMMENDED_TOOLS_FOR_FEATURE_BUILDER = {
         "delete_file",
         "run_tests",
         "install_dependency",
-        "setup_dependencies",
         "create_directory"
     ],
     "fix_implementation": [

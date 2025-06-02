@@ -448,20 +448,20 @@ export const fetchTodoLogic = async (
   }
 };
 
-export const test = async () => {
-  const response = await fetchTodoLogic(
-    {
-      signature: "0x1234567890123456789012345678901234567890",
-      stakingKey: "0x1234567890123456789012345678901234567890",
-      pubKey: "0x1234567890123456789012345678901234567890",
-    },
-    {
-      githubUsername: "test",
-      roundNumber: 1,
-      taskId: "test-task",
-    },
-  );
-  console.log(response);
-};
+// export const test = async () => {
+//   const response = await fetchTodoLogic(
+//     {
+//       signature: "0x1234567890123456789012345678901234567890",
+//       stakingKey: "0x1234567890123456789012345678901234567890",
+//       pubKey: "0x1234567890123456789012345678901234567890",
+//     },
+//     {
+//       githubUsername: "test",
+//       roundNumber: 1,
+//       taskId: "test-task",
+//     },
+//   );
+//   console.log(response);
+// };
 
-test();
+// test();

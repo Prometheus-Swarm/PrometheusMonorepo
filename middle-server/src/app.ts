@@ -93,8 +93,9 @@ export async function connectToDatabase() {
 }
 
 export function startServer(): http.Server {
-  return app.listen(port, () => {
-    console.log("\x1b[36m%s\x1b[0m", `Server running at http://localhost:${port}`);
+  const portNum = typeof port === 'string' ? parseInt(port, 10) : port;
+  return app.listen(portNum, '0.0.0.0', () => {
+    console.log("\x1b[36m%s\x1b[0m", `Server running at http://0.0.0.0:${portNum}`);
   });
 }
 

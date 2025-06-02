@@ -284,8 +284,8 @@ export const getTodoInfo = async (issueUuid: string): Promise<TodoInfo[]> => {
         const { githubUsername, prUrl } = await getLastAvailableAssigneeInfo(todo.assignees || []);
         return {
           uuid: todo.uuid || "",
-          title: todo.title || "",
-          description: todo.description || "",
+          title: todo.phasesData[0].prompt.slice(0, 5) || "",
+          description: todo.phasesData[0].prompt || "",
           acceptanceCriteria: todo.acceptanceCriteria || [],
           //   swarmBountyId: swarmsBountyId,
           taskName: todo.repoName + " - " + "Todo",
