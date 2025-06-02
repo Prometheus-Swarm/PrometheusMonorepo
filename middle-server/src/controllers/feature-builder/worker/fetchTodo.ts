@@ -188,20 +188,27 @@ export const fetchTodoLogic = async (
         },
       };
     }
+    // return {
+    //   statuscode: 201,
+    //   data: {
+    //     success: true,
+    //     data: {
+    //       phasesData: existingAssignment.todo.phasesData,
+    //       todo_uuid: existingAssignment.todo.uuid,
+    //       issue_uuid: existingAssignment.todo.issueUuid,
+    //       acceptance_criteria: existingAssignment.todo.acceptanceCriteria,
+    //       repo_owner: existingAssignment.todo.repoOwner,
+    //       repo_name: existingAssignment.todo.repoName,
+    //       dependency_pr_urls: existingAssignment.dependencyPrUrls,
+    //       bounty_id: existingAssignment.todo.bountyId,
+    //     },
+    //   },
+    // };
     return {
-      statuscode: 200,
+      statuscode: 409,
       data: {
-        success: true,
-        data: {
-          phasesData: existingAssignment.todo.phasesData,
-          todo_uuid: existingAssignment.todo.uuid,
-          issue_uuid: existingAssignment.todo.issueUuid,
-          acceptance_criteria: existingAssignment.todo.acceptanceCriteria,
-          repo_owner: existingAssignment.todo.repoOwner,
-          repo_name: existingAssignment.todo.repoName,
-          dependency_pr_urls: existingAssignment.dependencyPrUrls,
-          bounty_id: existingAssignment.todo.bountyId,
-        },
+        success: false,
+        message: "Task already assigned",
       },
     };
   }

@@ -55,8 +55,8 @@ class PhaseData(BaseModel):
 
 
 class NewTaskModel(BaseModel):
-    title: Optional[str] = Field(None, description="Task title")
-    description: Optional[str] = Field(None, description="Task description")
+    title: str = Field(..., description="Task title")
+    description: str = Field(..., description="Task description")
     uuid: str = Field(
         default_factory=lambda: str(uuid.uuid4()), description="Unique identifier"
     )
