@@ -429,18 +429,31 @@ class TodoCreatorWorkflow(Workflow):
                     "task_info": task["info"],
                     "task_uuid": task.get("uuid"),
                 })
-
-                task_model = NewTaskModel(
-                    acceptanceCriteria=task["acceptance_criteria"],
-                    repoOwner=self.context["repo_owner"],
-                    repoName=self.context["repo_name"],
-                    phasesData=task["phases_data"],
-                    dependencyTasks=task.get("dependency_tasks", []),
-                    uuid=task.get("uuid"),
-                    bountyId=self.context["bounty_id"],
-                    bountyType=self.bounty_type,
-                    issueUuid=issue_uuid,
-                )
+                if self.bounty_type == SwarmBountyType.BUILD_FEATURE:
+                    try:
+                        # Extract task info from the structured format
+                        task_info = task["info"]
+                        if isinstance(task_info, dict):
+                            task_title = task_info.get("Todo", "").strip()
+                            task_description = task_info.get("Description", "").strip()
+                            task["info"] = f"{task_title}\n{task_description}"
+                    except Exception as e:
+                        log_error(e, f"Failed to process task info format for task {task.get('uuid', 'unknown')}")
+                        # Fallback to using info as is if processing fails
+                        pass
+                    task_model = NewTaskModel(
+                        title=task_title or "No Title Task",
+                        description=task_description or "No Description Task", 
+                        acceptanceCriteria=task["acceptance_criteria"],
+                        repoOwner=self.context["repo_owner"],
+                        repoName=self.context["repo_name"],
+                        phasesData=task["phases_data"],
+                        dependencyTasks=task.get("dependency_tasks", []),
+                        uuid=task.get("uuid"),
+                        bountyId=self.context["bounty_id"],
+                        bountyType=self.bounty_type,
+                        issueUuid=issue_uuid,
+                    )
                 result = insert_task_to_mongodb(task_model)
                 
                 if result:
