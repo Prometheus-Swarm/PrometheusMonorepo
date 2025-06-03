@@ -6,48 +6,77 @@ from dotenv import load_dotenv
 from src.workflows.repoSummarizer.workflow import RepoSummarizerWorkflow
 from src.workflows.repoSummarizer.prompts import PROMPTS
 from prometheus_swarm.clients import setup_client
+from typing import List, Dict, Any
+import ast
+import re
+
 
 # Load environment variables
 load_dotenv()
 
-exampleTask = {'title': {'Type': 'File', 'PathToWrite': ['codex-cli', 'README.md'], 'SectionName': ['CLI Overview']}, 'description': 'Create a comprehensive overview section explaining the purpose and key features of the Codex CLI, providing users with a clear understanding of its functionality and value.', 'acceptance_criteria': ['Explain the main purpose of the CLI', 'Highlight key features and capabilities', 'Provide a high-level description of what problems the CLI solves', 'Write in a clear, engaging, and informative style'], 'tools': ['write_file', 'read_file', 'list_directory_contents', 'create_pull_request_legacy'], 'uuid': 'a978aad3-096e-48ec-b133-3eb85968e9c9'}
+def clean_prompt_string(prompt: str) -> str:
+    """Clean up double curly braces in prompt strings to single curly braces and handle dictionary formatting.
+    
+    Args:
+        prompt (str): The prompt string that may contain double curly braces and dictionary strings
+        
+    Returns:
+        str: Cleaned prompt string with proper formatting
+    """
+    # First handle the dictionary string formatting
+    def replace_dict(match):
+        try:
+            # Parse the dictionary string into an actual dict
+            dict_str = match.group(0)
+            dict_obj = ast.literal_eval(dict_str)
+            # Format it into a readable string
+            return f"Description: {dict_obj['Description']}, Todo: {dict_obj['Todo']}"
+        except:
+            return match.group(0)
+    
+    # Find and replace dictionary strings
+    prompt = re.sub(r"\{'Description':.*?'Todo':.*?\}", replace_dict, prompt)
+    
+    # Then handle double curly braces
+    return prompt.replace("{{", "{").replace("}}", "}")
+
 def main():
     """Run the todo creator workflow."""
-    parser = argparse.ArgumentParser(
-        description="Create tasks from a feature specification for a GitHub repository"
-    )
-    parser.add_argument(
-        "--repo",
-        type=str,
-        required=True,
-        help="GitHub repository URL (e.g., https://github.com/owner/repo)",
-    )
-
-    parser.add_argument(
-        "--model",
-        type=str,
-        default="anthropic",
-        choices=["anthropic", "openai", "xai"],
-        help="Model provider to use (default: anthropic)",
-    )
-    args = parser.parse_args()
-
+    # Sample Repo Url
+    repo_url = "https://github.com/openai/codex"
+    ## NEVER CHANGE THIS PHASES DATA! 
+    phasesData = [
+        {
+            "prompt": "Create a descriptive branch name for the following task: {'Description': 'Create unit tests for CoinGecko API integration', 'Todo': 'Write comprehensive unit tests to validate API client and service'}. The branch name should:\n1. Be kebab-case (lowercase with hyphens)\n2. Be descriptive of the task\n3. Be concise (max 50 chars)\n4. Not include special characters\nSTOP after creating the branch name, do not begin implementing the task.",
+            "tools": ["create_branch"]
+        },
+        {
+            "prompt": "You are working on implementing the following task:\n{'Description': 'Create unit tests for CoinGecko API integration', 'Todo': 'Write comprehensive unit tests to validate API client and service'}\n\nIMPORTANT: ALWAYS use relative paths (e.g., 'src/file.py' not '/src/file.py')\n\nIMPORTANT: Before you begin your task, make sure a test runner is installed and configured correctly.\nIMPORTANT: If this is a Typescript project and a test framework is not already configured, use Vitest.\nUse the available tools to:\nCreate necessary files using relative paths\nRun tests to verify your implementation\nFix any issues until all tests pass\n\nIMPORTANT: Ignore tests that require an end to end test runner like playwright or cypress\nPlease implement the task following these guidelines:\n1. Write clear, well-documented code\n2. Include comprehensive tests\n3. Follow best practices for the language/framework\n4. Handle edge cases and errors appropriately\n5. Ensure all tests pass\nSTOP after implementing the task, do not create a pull request.",
+            "tools": ["read_file", "list_files", "write_file", "delete_file", "run_tests", "install_dependency"]
+        },
+        {
+            "prompt": "You are creating a pull request for the following task:\nTask Description:\n{'Description': 'Create unit tests for CoinGecko API integration', 'Todo': 'Write comprehensive unit tests to validate API client and service'}\n\nIMPORTANT: Always use relative paths (e.g., 'src/file.py' not '/src/file.py')\n\nIMPORTANT: Ignore tests that require an end to end test runner like playwright or cypress\nSteps to create the pull request:\n1. First examine the available files to understand the implementation\n2. Create a clear and descriptive PR title\n3. Write a comprehensive PR description that includes:\n   - Description of all changes made\n   - Implementation details for each component\n   - Testing approach and results\n   - How each acceptance criterion is met\n   - Any important notes or considerations",
+            "tools": ["read_file", "list_files", "create_worker_pull_request"]
+        }
+    ]
+    model = "anthropic"
     # Initialize client
-    client = setup_client(args.model)
-    title_info = f"File: {'/'.join(exampleTask['title']['PathToWrite'])} - Section: {exampleTask['title']['SectionName'][0]}"
-    PROMPTS["consolidated_phase"] = title_info + "\n\n" + exampleTask['description'] + "\n\nAcceptance Criteria:\n" + "\n".join(exampleTask['acceptance_criteria'])
- 
+    client = setup_client(model)
     # Run the todo creator workflow
+
+    PROMPTS["create_branch"] = clean_prompt_string(phasesData[0]["prompt"])
+    PROMPTS["create_pr"] = clean_prompt_string(phasesData[2]["prompt"])
+    PROMPTS["consolidated_phase"] = clean_prompt_string(phasesData[1]["prompt"])
     workflow = RepoSummarizerWorkflow(
         client=client,
-        prompts=PROMPTS,
-        repo_url=args.repo,
-        tools=exampleTask['tools']
+        repo_url=repo_url,
+        phasesData=phasesData,
+        PROMPTS=PROMPTS
     )
 
     result = workflow.run()
     if not result or not result.get("success"):
-        print("Todo creator workflow failed")
+        print("Repo summarizer workflow failed")
         sys.exit(1)
 
 

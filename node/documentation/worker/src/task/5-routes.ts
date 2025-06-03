@@ -34,7 +34,24 @@ export async function routes() {
     });
     res.status(200).json({ isLeader: isLeader, leaderNode: leaderNode });
   });
+  app.post("/sign-payload", async (req, res) => {
+    const payload = typeof req.body.payload === 'string' ? JSON.parse(req.body.payload) : req.body.payload;
+    const publicKey = await namespaceWrapper.getMainAccountPubkey();
+    const stakingKeypair = await namespaceWrapper.getSubmitterAccount();
+    if (!stakingKeypair || !publicKey) {
+      throw new Error("No staking key found");
+    }
 
+    const stakingKey = stakingKeypair.publicKey.toBase58();
+    const jsonPayload = {
+      ...payload,
+      publicKey: publicKey,
+      taskId: TASK_ID,
+      stakingKey: stakingKey,
+    };
+    const result = await namespaceWrapper.payloadSigning(jsonPayload, stakingKeypair.secretKey);
+    res.status(200).json({ result: result });
+  });
   app.get("/task/:roundNumber", async (req, res) => {
     console.log("task endpoint called with round number: ", req.params.roundNumber);
     const roundNumber = req.params.roundNumber;

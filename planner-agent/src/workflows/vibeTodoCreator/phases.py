@@ -4,6 +4,33 @@ from prometheus_swarm.workflows.base import WorkflowPhase, Workflow
 from .utils import SwarmBountyType
 
 
+class IssueGenerationPhase(WorkflowPhase):
+    def __init__(self, workflow: Workflow, conversation_id: str = None, bounty_type: SwarmBountyType = None):
+        prompt_name = "docs_generate_issues" if bounty_type == SwarmBountyType.DOCUMENT_SUMMARIZER else "generate_issues"
+        super().__init__(
+            workflow=workflow,
+            prompt_name=prompt_name,
+            available_tools=["generate_issues", "list_directory_contents", "read_file"],
+            conversation_id=conversation_id,
+            name="Issue Generation",
+        )
+
+
+class IssueValidationPhase(WorkflowPhase):
+    def __init__(self, workflow: Workflow, conversation_id: str = None, bounty_type: SwarmBountyType = None):
+        prompt_name = "docs_validate_issues" if bounty_type == SwarmBountyType.DOCUMENT_SUMMARIZER else "validate_issues"
+        super().__init__(
+            workflow=workflow,
+            prompt_name=prompt_name,
+            available_tools=[
+                "generate_issues",
+                "approve_issues",
+                "list_files",
+                "read_file",
+            ],
+            conversation_id=conversation_id,
+            name="Issue Validation",
+        )
 
 
 class TaskDecompositionPhase(WorkflowPhase):

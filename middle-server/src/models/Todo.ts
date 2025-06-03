@@ -71,6 +71,12 @@ class Todo {
   @prop({ required: false, enum: SwarmBountyType })
   public bountyType?: SwarmBountyType;
 
+  @prop({ required: false })
+  public title?: string;
+
+  @prop({ required: false })
+  public description?: string;
+
   @prop({ required: true })
   public uuid!: string;
 

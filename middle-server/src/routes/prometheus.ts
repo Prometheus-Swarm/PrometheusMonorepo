@@ -8,7 +8,7 @@ router.get(
   "/v2/info",
   verifyBearerToken,
   (req, res, next) => {
-    res.set("Cache-Control", "public, max-age=30");
+    res.set("Cache-Control", "public, max-age=5");
     next();
   },
   infoV2,

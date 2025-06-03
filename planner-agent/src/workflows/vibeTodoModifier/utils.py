@@ -55,8 +55,6 @@ class PhaseData(BaseModel):
 
 
 class NewTaskModel(BaseModel):
-    title: str = Field(..., description="Task title")
-    description: str = Field(..., description="Task description")
     uuid: str = Field(
         default_factory=lambda: str(uuid.uuid4()), description="Unique identifier"
     )
@@ -65,7 +63,7 @@ class NewTaskModel(BaseModel):
     repoOwner: str = Field(..., description="Repository owner")
     repoName: str = Field(..., description="Repository name")
     phasesData: List[PhaseData] = Field(..., description="Phases data with prompts and tools")
-    issueUuid: str = Field(..., description="Issue UUID")
+
     assignedTo: List[TaskAssignedInfo] = Field(
         default=[], description="List of assigned agents"
     )
@@ -119,6 +117,7 @@ class IssueModel(BaseModel):
     uuid: str = Field(
         default_factory=lambda: str(uuid.uuid4()), description="Unique identifier"
     )
+    issueUuid: str = Field(..., description="Issue UUID")   
     forkOwner: str = Field(..., description="Fork owner")
     forkUrl: str = Field(..., description="Fork URL")
     repoOwner: str = Field(..., description="Repository owner")
@@ -225,7 +224,7 @@ def insert_system_prompt_to_mongodb(system_prompt: SystemPromptModel) -> bool:
 
 
 if __name__ == "__main__":
-    task = TaskModel(
+    task = NewTaskModel(
         title="Test Task",
         description="This is a test task",
         acceptanceCriteria="Test acceptance criteria",
@@ -241,3 +240,19 @@ if __name__ == "__main__":
         repoName="Test Name",
     )
     insert_issue_to_mongodb(issue)
+
+
+def update_task_phaseData(task_uuid: str, phasesData: List[PhaseData]) -> bool:
+    try:
+        # Update the task
+        result = todos_collection.update_one(
+            {"uuid": task_uuid},
+            {"$set": {"phasesData": phasesData}}
+        )
+        return result.acknowledged
+    except ConnectionFailure:
+        print("MongoDB connection failed")
+        return False
+    except PyMongoError as e:
+        print(f"MongoDB error: {e}")
+        return False
