@@ -28,6 +28,9 @@ class BuilderErrorLogs {
   @prop({ required: true })
   public taskId!: string;
 
+  @prop({ required: true })
+  public todoUUID!: string;
+
   @prop({ type: () => [ErrorEntry], default: [] })
   public errors!: ErrorEntry[];
 }

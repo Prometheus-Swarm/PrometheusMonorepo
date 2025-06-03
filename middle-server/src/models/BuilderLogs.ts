@@ -32,6 +32,9 @@ class BuilderLogs {
   @prop({ required: true })
   public taskId!: string;
 
+  @prop({ required: true })
+  public todoUUID!: string;
+
   @prop({ type: () => [LogEntry], default: [] })
   public logs!: LogEntry[];
 }

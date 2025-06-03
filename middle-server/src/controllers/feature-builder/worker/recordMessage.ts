@@ -10,11 +10,12 @@ interface RecordMessageRequest {
   taskType: "todo" | "issue";
   taskStage: "task" | "audit";
   prUrl?: string;
+  todoUUID?: string;
 }
 
 export const recordBuilderMessage = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { bounty_id, content, tool, githubUsername, uuid, taskType, taskStage, prUrl } =
+    const { bounty_id, content, tool, githubUsername, uuid, taskType, taskStage, prUrl, todoUUID } =
       req.body as RecordMessageRequest;
 
     if (!bounty_id) {
@@ -34,6 +35,7 @@ export const recordBuilderMessage = async (req: Request, res: Response): Promise
       taskType,
       taskStage,
       prUrl,
+      todoUUID,
     });
 
     res.status(200).json({

@@ -28,6 +28,9 @@ export class BuilderConversation {
   @prop({ required: true, enum: ["task", "audit"] })
   public taskStage!: "task" | "audit";
 
+  @prop({ required: true })
+  public todoUUID!: string;
+
   @prop({ required: false })
   public prUrl?: string;
 }
