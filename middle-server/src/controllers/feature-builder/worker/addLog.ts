@@ -96,7 +96,7 @@ export const addLogToDB = async (req: Request, res: Response) => {
   try {
     const { stakingKey, swarmBountyId, logMessage, logLevel, signature, todoUUID } = req.body;
 
-    if(!todoUUID || !swarmBountyId) {
+    if (!todoUUID || !swarmBountyId) {
       return res.status(400).json({ message: "Missing todoUUID or swarmBountyId" });
     }
     // Verify Signature
