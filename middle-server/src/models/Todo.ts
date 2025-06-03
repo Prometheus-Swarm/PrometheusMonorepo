@@ -2,7 +2,7 @@ import { prop, getModelForClass, modelOptions, Severity } from "@typegoose/typeg
 import { builder247DB } from "../services/database/database";
 import { SwarmBountyType } from "../config/constant";
 
-enum DocumentationStatus {
+export enum DocumentationStatus {
   INITIALIZED = "initialized",
   IN_PROGRESS = "in_progress",
   DRAFT_PR_RECEIVED = "draft_pr_received",
@@ -19,6 +19,14 @@ enum TodoStatus {
   APPROVED = "approved", // PR passed audit and appeared on the distribution list
   MERGED = "merged", // PR is merged by leader node
   FAILED = "failed", // Task has failed after maximum retries
+}
+
+class PhaseData {
+  @prop({ required: true })
+  public prompt!: string;
+
+  @prop({ required: true, type: () => [String] })
+  public tools!: string[];
 }
 
 class AssignedInfo {
@@ -60,11 +68,14 @@ class AssignedInfo {
   existingConnection: builder247DB,
 })
 class Todo {
-  @prop({ required: true })
-  public title!: string;
-
   @prop({ required: false, enum: SwarmBountyType })
   public bountyType?: SwarmBountyType;
+
+  @prop({ required: false })
+  public title?: string;
+
+  @prop({ required: false })
+  public description?: string;
 
   @prop({ required: true })
   public uuid!: string;
@@ -74,9 +85,6 @@ class Todo {
 
   @prop({ required: true })
   public issueUuid!: string;
-
-  @prop({ required: true })
-  public description!: string;
 
   @prop({ required: true, type: () => [String] })
   public acceptanceCriteria!: string[];
@@ -92,6 +100,9 @@ class Todo {
 
   @prop({ required: false })
   public assignees?: AssignedInfo[];
+
+  @prop({ required: true, type: () => [PhaseData] })
+  public phasesData!: PhaseData[];
 
   @prop({
     type: String,

@@ -56,6 +56,7 @@ interface TodoInfo {
   status: SwarmBountyStatus; // TODO the insider ones are not matching
   githubUsername: string;
   prUrl: string;
+  phasesData: any[];
 }
 
 export const SwarmBountyStatusDocumentationStatusMapping = {
@@ -279,15 +280,18 @@ export const getIssueInfo = async (swarmBountyId: string): Promise<IssueInfo[]> 
 export const getTodoInfo = async (issueUuid: string): Promise<TodoInfo[]> => {
   try {
     const todos = await TodoModel.find({ issueUuid: issueUuid });
+    console.log(todos);
     return Promise.all(
       todos.map(async (todo) => {
+        console.log(todo);
+        console.log("Todo phasesData:", JSON.stringify(todo.phasesData, null, 2));
         const { githubUsername, prUrl } = await getLastAvailableAssigneeInfo(todo.assignees || []);
         return {
           uuid: todo.uuid || "",
-          title: todo.title || "",
-          description: todo.description || "",
+          title: todo.title || todo.phasesData[0].prompt.slice(0, 5) || "",
+          description: todo.description || todo.phasesData[0].prompt || "",
           acceptanceCriteria: todo.acceptanceCriteria || [],
-          //   swarmBountyId: swarmsBountyId,
+          phasesData: todo.phasesData || [],
           taskName: todo.repoName + " - " + "Todo",
           swarmType: SwarmBountyType.BUILD_FEATURE,
           nodes: todo.assignees?.length || 0,

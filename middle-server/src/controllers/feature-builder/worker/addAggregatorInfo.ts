@@ -79,6 +79,7 @@ async function verifySignatureData(
 }
 
 export const addAggregatorInfo = async (req: Request, res: Response) => {
+  console.log("addAggregatorInfo", req.body);
   const requestBody = verifyRequestBody(req);
   if (!requestBody) {
     res.status(401).json({

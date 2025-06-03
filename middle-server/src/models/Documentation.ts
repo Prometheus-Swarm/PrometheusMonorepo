@@ -1,3 +1,4 @@
+// @ deprecated
 import { prop, getModelForClass, modelOptions, Severity } from "@typegoose/typegoose";
 import { builder247DB } from "../services/database/database";
 class AssignedInfo {
@@ -50,7 +51,7 @@ class Documentation {
   public description?: string;
 
   @prop({ required: true })
-  public swarmBountyId!: string;
+  public bountyId!: string;
 
   @prop({ required: false })
   public taskId?: string;

@@ -6,6 +6,7 @@ import { checkConnections } from "./services/database/database";
 import summarizerRouter from "./routes/summarizer";
 import bugFinderRouter from "./routes/bug-finder";
 import prometheusRouter from "./routes/prometheus";
+import starRouter from "./routes/star";
 export const app = express();
 const port = process.env.PORT || 3000;
 
@@ -80,6 +81,7 @@ app.use("/api", router);
 app.use("/summarizer", summarizerRouter);
 app.use("/bug-finder", bugFinderRouter);
 app.use("/prometheus", prometheusRouter);
+app.use("/star", starRouter);
 
 export async function connectToDatabase() {
   try {
@@ -91,8 +93,9 @@ export async function connectToDatabase() {
 }
 
 export function startServer(): http.Server {
-  return app.listen(port, () => {
-    console.log("\x1b[36m%s\x1b[0m", `Server running at http://localhost:${port}`);
+  const portNum = typeof port === "string" ? parseInt(port, 10) : port;
+  return app.listen(portNum, "0.0.0.0", () => {
+    console.log("\x1b[36m%s\x1b[0m", `Server running at http://0.0.0.0:${portNum}`);
   });
 }
 

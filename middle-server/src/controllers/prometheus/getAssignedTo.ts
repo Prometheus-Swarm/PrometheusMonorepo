@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
-import { DocumentationModel } from "../../models/Documentation";
+// import { DocumentationModel } from "../../models/Documentation";
+import { TodoModel } from "../../models/Todo";
 // @deprecated
 export const getAssignedTo = async (req: Request, res: Response) => {
   const { swarmBountyId } = req.query;
@@ -30,15 +31,15 @@ export const getAssignedTo = async (req: Request, res: Response) => {
 
 export const getAssignedToLogic = async (swarmsBountyId: string): Promise<{ statuscode: number; data: any }> => {
   try {
-    const assignedTo = await DocumentationModel.findOne({ swarmBountyId: swarmsBountyId });
+    const assignedTo = await TodoModel.findOne({ bountyId: swarmsBountyId });
     console.log(assignedTo);
-    if (assignedTo && assignedTo.assignedTo) {
+    if (assignedTo && assignedTo.assignees) {
       return {
         statuscode: 200,
         data: {
           success: true,
           message: "Returned assignedTo",
-          assignedTo: assignedTo.assignedTo,
+          assignedTo: assignedTo.assignees,
         },
       };
     }
