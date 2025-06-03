@@ -63,7 +63,7 @@ export const addLog = async (
 export const addErrorLogToDB = async (req: Request, res: Response) => {
   try {
     const { stakingKey, error: errorMessage, signature } = req.body;
-    let { swarmBountyId, todoUUID } = req.body
+    let { swarmBountyId, todoUUID } = req.body;
     // Verify Signature
     const { data, error } = await verifySignature(signature, stakingKey);
     if (error || !data) {
