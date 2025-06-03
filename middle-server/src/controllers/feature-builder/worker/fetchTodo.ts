@@ -238,6 +238,8 @@ export const fetchTodoLogic = async (
     for (const issue of inProgressIssues) {
       if (issue.bountyId && !uniqueBountyIds.has(issue.bountyId)) {
         uniqueBountyIds.add(issue.bountyId);
+      }
+      if (issue.uuid && !uniqueBountyIssues.has(issue.uuid)) {
         uniqueBountyIssues.add(issue.uuid);
       }
     }
