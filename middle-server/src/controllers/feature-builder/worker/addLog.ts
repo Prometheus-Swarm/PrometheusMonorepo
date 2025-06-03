@@ -62,8 +62,8 @@ export const addLog = async (
 
 export const addErrorLogToDB = async (req: Request, res: Response) => {
   try {
-    const { stakingKey, swarmBountyId, error: errorMessage, signature, todoUUID } = req.body;
-
+    const { stakingKey, error: errorMessage, signature } = req.body;
+    let { swarmBountyId, todoUUID } = req.body
     // Verify Signature
     const { data, error } = await verifySignature(signature, stakingKey);
     if (error || !data) {
@@ -73,6 +73,12 @@ export const addErrorLogToDB = async (req: Request, res: Response) => {
     const parsedData = JSON.parse(data);
     if (stakingKey !== parsedData.stakingKey) {
       return res.status(400).json({ message: "Signature error - unparseable data" });
+    }
+    if (!todoUUID) {
+      todoUUID = "Initial";
+    }
+    if (!swarmBountyId) {
+      swarmBountyId = "Initial";
     }
     // check if stakingKey and error already in the DB
     const existingFailedInfo = await BuilderErrorLogsModel.findOne({

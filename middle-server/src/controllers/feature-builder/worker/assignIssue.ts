@@ -60,13 +60,13 @@ export const assignIssueLogic = async () => {
   }
 
   // Keep track of bounties we've skipped
-  const skippedBounties = new Set<string>();
+  const skippedIssues = new Set<string>();
 
   // Loop through issues to find the first assignable one
   for (const issue of issues) {
     // Skip issues from bounties we've already determined are blocked
-    if (issue.bountyId && skippedBounties.has(issue.bountyId)) {
-      console.log(`Skipping issue from blocked bounty ${issue.bountyId}`);
+    if (issue.uuid && skippedIssues.has(issue.uuid)) {
+      console.log(`Skipping issue ${issue.uuid} because of blocked predecessor`);
       continue;
     }
 
@@ -104,7 +104,29 @@ export const assignIssueLogic = async () => {
     });
     if (!predecessor) {
       console.error(`Predecessor issue ${issue.predecessorUuid} not found`);
-      continue;
+      const result = await IssueModel.findOneAndUpdate(
+        { uuid: issue.uuid, bountyType: SwarmBountyType.BUILD_FEATURE },
+        { $set: { status: IssueStatus.AGGREGATOR_PENDING } },
+        { new: true },
+      );
+
+      if (!result) {
+        console.error(`Failed to update issue ${issue.uuid}`);
+        continue;
+      }
+
+      return {
+        statuscode: 200,
+        data: {
+          success: true,
+          message: "Issue assigned",
+          issueId: result.uuid,
+          repoOwner: result.forkOwner,
+          repoName: result.repoName,
+          bountyId: result.bountyId,
+          forkUrl: result.forkUrl,
+        },
+      };
     }
 
     if (predecessor.status === IssueStatus.APPROVED) {
@@ -134,9 +156,9 @@ export const assignIssueLogic = async () => {
     }
 
     // If predecessor is not approved, mark this bounty as skipped
-    if (predecessor.bountyId) {
-      console.log(`Marking bounty ${predecessor.bountyId} as blocked due to unapproved predecessor`);
-      skippedBounties.add(predecessor.bountyId);
+    if (predecessor.uuid) {
+      console.log(`Marking issue ${issue.uuid} as blocked due to unapproved predecessor`);
+      skippedIssues.add(issue.uuid);
     }
   }
 
