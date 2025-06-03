@@ -58,3 +58,5 @@ export async function syncDB() {
   }
   console.log("syncDB planner completed");
 }
+
+syncDB();

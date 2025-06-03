@@ -132,17 +132,17 @@ def create_plan():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     
-    # Test plan creation
-    test_data = {
-        "sourceUrl": "https://github.com/Prometheus-Swarm/prometheus-test",
-        "forkUrl": "https://github.com/Prometheus-Swarm/prometheus-test",
-        "issueSpec": "Please create a new coingekko api endpoint feature for the project",
-        "bountyId": "test-bounty-123",
-        "bountyType": "BUILD_FEATURE"
-    }
+    # # Test plan creation
+    # test_data = {
+    #     "sourceUrl": "https://github.com/Prometheus-Swarm/prometheus-test",
+    #     "forkUrl": "https://github.com/Prometheus-Swarm/prometheus-test",
+    #     "issueSpec": "Please create a new coingekko api endpoint feature for the project",
+    #     "bountyId": "test-bounty-123",
+    #     "bountyType": "BUILD_FEATURE"
+    # }
     
-    # Create a test request context
-    with app.test_request_context(json=test_data):
-        create_plan()
+    # # Create a test request context
+    # with app.test_request_context(json=test_data):
+    #     create_plan()
     
     app.run(host="0.0.0.0", port=port, debug=True)
