@@ -107,7 +107,7 @@ async function updateTodoWithPRUrl(
 
   const updateFields = isFinal
     ? {
-      //TEMP MEASURE! 
+        //TEMP MEASURE!
         status: TodoStatus.APPROVED,
         "assignees.$[elem].isFinal": true,
         "assignees.$[elem].roundNumber": roundNumber, // Update roundNumber for final PR
