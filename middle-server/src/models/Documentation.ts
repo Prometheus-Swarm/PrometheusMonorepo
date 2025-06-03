@@ -51,7 +51,7 @@ class Documentation {
   public description?: string;
 
   @prop({ required: true })
-  public bountyId!: string;
+  public swarmBountyId!: string;
 
   @prop({ required: false })
   public taskId?: string;
