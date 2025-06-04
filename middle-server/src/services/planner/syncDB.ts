@@ -27,6 +27,12 @@ export async function syncDB() {
   for (const bounty of swarmBounties) {
     const bountyId = bounty._id.toString();
     if (!existingSpecs.has(bountyId)) {
+      // Check if description exists
+      if (!bounty.description) {
+        console.warn(`Skipping bounty ${bountyId} (${bounty.projectName}) - missing description`);
+        continue;
+      }
+      
       // Create new spec if it doesn't exist
       await SpecModel.create({
         title: bounty.projectName,
