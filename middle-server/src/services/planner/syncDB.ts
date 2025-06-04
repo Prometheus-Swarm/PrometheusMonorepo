@@ -15,20 +15,17 @@ export async function syncDB() {
     return;
   }
   // console.log("Raw API response data:", JSON.stringify(data, null, 2));
-  
-  const swarmBounties = data.data.filter(
-    (bounty: any) =>
-      bounty.swarmType === SwarmBountyType.BUILD_FEATURE,
-  );
+
+  const swarmBounties = data.data.filter((bounty: any) => bounty.swarmType === SwarmBountyType.BUILD_FEATURE);
   // console.log("Filtered swarm bounties:", JSON.stringify(swarmBounties, null, 2));
-  
+
   const specs = await SpecModel.find();
   // console.log("Existing specs:", JSON.stringify(specs, null, 2));
 
   // Create a map of existing specs by swarmBountyId for quick lookup
   const existingSpecs = new Map(specs.map((spec) => [spec.swarmBountyId, spec]));
   // console.log("existingSpecs", existingSpecs.size);
-  
+
   // Process each feature bounty
   for (const bounty of swarmBounties) {
     console.log("Processing bounty:", JSON.stringify(bounty, null, 2));
