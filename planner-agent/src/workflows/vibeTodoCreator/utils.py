@@ -3,7 +3,7 @@ from typing import List, Optional, Dict
 import uuid
 from datetime import datetime
 from pymongo.errors import ConnectionFailure, PyMongoError
-from .mongo_connection import MongoConnection
+from src.server.mongo_connection import MongoConnection
 from enum import Enum
 
 mongo_conn = MongoConnection()
@@ -225,7 +225,7 @@ def insert_system_prompt_to_mongodb(system_prompt: SystemPromptModel) -> bool:
 
 
 if __name__ == "__main__":
-    task = TaskModel(
+    task = NewTaskModel(
         title="Test Task",
         description="This is a test task",
         acceptanceCriteria="Test acceptance criteria",

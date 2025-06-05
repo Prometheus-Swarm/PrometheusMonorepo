@@ -3,7 +3,7 @@ from typing import List, Optional, Dict
 import uuid
 from datetime import datetime
 from pymongo.errors import ConnectionFailure, PyMongoError
-from .mongo_connection import MongoConnection
+from src.server.mongo_connection import MongoConnection
 from enum import Enum
 
 mongo_conn = MongoConnection()

@@ -9,9 +9,10 @@ from prometheus_swarm.utils.logging import log_error
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor
 from ..workflows.vibeTodoCreator.utils import SwarmBountyType
+from .models import delete_a_spec_from_mongodb
 # from src.workflows.audit.workflow import AuditWorkflow
 # from src.workflows.audit.prompts import PROMPTS as AUDIT_PROMPTS
-
+from .slack import send_message_to_slack
 # import requests
 
 load_dotenv()
@@ -75,9 +76,12 @@ def create_todos(source_url: str, fork_url: str, issue_spec: dict, bounty_id: st
         )
         result = workflow.run()
         if not result or not result.get("success"):
+            # Simply add retry because it may cause the initifinite loop issue
+            # delete_a_spec_from_mongodb(bounty_id)
             log_error(
                 Exception(result.get("error", "No result")), "Task creation failed"
             )
+            send_message_to_slack(f"Planner failed for {bounty_id} with error {result.get('error', 'No result')}")
             return {"success": False, "error": result.get("error", "No result")}
         return {
             "success": True,
@@ -92,6 +96,9 @@ def create_todos(source_url: str, fork_url: str, issue_spec: dict, bounty_id: st
         }
     except Exception as e:
         logger.error(f"Workflow execution failed: {str(e)}")
+        # Remove Spec from MongoDB
+        # Simply add retry because it may cause the initifinite loop issue
+        # delete_a_spec_from_mongodb(bounty_id)
         return {"success": False, "error": str(e)}
 
 

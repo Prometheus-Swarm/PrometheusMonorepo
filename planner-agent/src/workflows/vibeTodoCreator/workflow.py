@@ -237,11 +237,18 @@ class TodoCreatorWorkflow(Workflow):
         """Execute the main workflow."""
         generate_issues_result = self.generate_issues()
         if not generate_issues_result or not generate_issues_result.get("success"):
-            return {
-                "success": False,
-                "message": "Failed to generate issues",
-                "data": None,
-            }
+            retry = 0
+            while retry < 3:
+                generate_issues_result = self.generate_issues()
+                if generate_issues_result and generate_issues_result.get("success"):
+                    break
+                retry += 1
+            if retry >= 3:
+                return {
+                    "success": False,
+                    "message": "Failed to generate issues",
+                    "data": None,
+                }
 
         self.context["issues"] = generate_issues_result["data"]["issues"]
 
