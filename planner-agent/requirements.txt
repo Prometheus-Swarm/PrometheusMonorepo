@@ -17,4 +17,4 @@ sqlmodel>=0.0.22
 openai>=0.28.0
 colorama>=0.4.6
 pymongo>=4.0.0
-prometheus_swarm>=0.3.0
+prometheus_swarm>=0.3.7
