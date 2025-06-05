@@ -40,7 +40,7 @@ router.post("/builder/add-pr-to-to-do", addPR as RequestHandler);
 router.post("/builder/add-issue-pr", addIssuePR as RequestHandler);
 router.post("/builder/check-to-do", checkToDo as RequestHandler);
 router.post("/builder/assign-issue", assignIssue as RequestHandler);
-router.post("/builder/update-audit-result", updateAuditResult as RequestHandler);
+// router.post("/builder/update-audit-result", updateAuditResult as RequestHandler);
 router.post("/builder/fetch-issue", fetchIssue as RequestHandler);
 router.post("/builder/check-issue", checkIssue as RequestHandler);
 router.post("/builder/record-log", addLogToDB as RequestHandler);
