@@ -1,13 +1,12 @@
-import { getTaskStateInfo } from "@_koii/create-task-cli";
-import { Connection } from "@_koii/web3.js";
+
 import { TaskRoundTimeModel } from "../../models/TaskRoundTime";
+import { cachedGetTaskState } from "./cachedGetTaskState";
 
 export async function getRoundTime(taskId: string) {
   try {
     const documentationModelResult = await TaskRoundTimeModel.findOne({ taskId: taskId });
     if (!documentationModelResult) {
-      const connection = new Connection("https://mainnet.koii.network", "confirmed");
-      const taskState = await getTaskStateInfo(connection, taskId);
+      const taskState = await cachedGetTaskState(taskId);
       const roundTime = taskState.round_time;
       const roundTimeInMS = roundTime * 408;
       await TaskRoundTimeModel.create({ taskId: taskId, roundTimeInMS: roundTimeInMS });
