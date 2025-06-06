@@ -17,8 +17,7 @@ from prometheus_swarm.workflows.utils import (
 from src.workflows.vibeTodoCreator.utils import (
     IssueModel,
     NewTaskModel,
-    insert_issue_to_mongodb,
-    insert_task_to_mongodb,
+    bulk_insert_issues_and_todos,
     SystemPromptModel,
     insert_system_prompt_to_mongodb,
     SwarmBountyType,
@@ -251,13 +250,81 @@ class TodoCreatorWorkflow(Workflow):
                 }
 
         self.context["issues"] = generate_issues_result["data"]["issues"]
+        
+        # Create list of issue models
+        issue_models = []
+        for issue in generate_issues_result["data"]["issues"]:
+            issue_model = IssueModel(
+                title=issue["title"],
+                description=issue["description"],
+                repoOwner=self.context["repo_owner"],
+                repoName=self.context["repo_name"],
+                uuid=issue["uuid"],
+                bountyId=self.context["bounty_id"],
+                forkOwner=self.context["fork_owner"],
+                forkUrl=self.context["fork_url"],
+                bountyType=SwarmBountyType.BUILD_FEATURE,
+            )
+            issue_models.append(issue_model)
 
         tasks = []
+        task_models = []
         for issue in generate_issues_result["data"]["issues"]:
             self.context["current_issue"] = issue
             task_result = self.generate_tasks(issue["uuid"])
             if task_result:
                 tasks.append(task_result["data"]["tasks"])
+                # Process tasks for bulk insert
+                for task_data in task_result["data"]["tasks"]:
+                    try:
+                        task_data["phases_data"] = self._get_phase_data(
+                            task_data["info"], 
+                            task_data["tools"], 
+                            task_data["acceptance_criteria"]
+                        )
+
+                        if self.bounty_type == SwarmBountyType.BUILD_FEATURE:
+                            try:
+                                # Extract task info from the structured format
+                                task_info = task_data["info"]
+                                if isinstance(task_info, dict):
+                                    task_title = task_info.get("Todo", "").strip()
+                                    task_description = task_info.get("Description", "").strip()
+                                    task_data["info"] = f"{task_title}\n{task_description}"
+                            except Exception as e:
+                                log_error(e, f"Failed to process task info format for task {task_data.get('uuid', 'unknown')}")
+                                # Fallback to using info as is if processing fails
+                                pass
+
+                            task_model = NewTaskModel(
+                                title=task_title or "No Title Task",
+                                description=task_description or "No Description Task", 
+                                acceptanceCriteria=task_data["acceptance_criteria"],
+                                repoOwner=self.context["repo_owner"],
+                                repoName=self.context["repo_name"],
+                                phasesData=task_data["phases_data"],
+                                dependencyTasks=task_data.get("dependency_tasks", []),
+                                uuid=task_data.get("uuid"),
+                                bountyId=self.context["bounty_id"],
+                                bountyType=self.bounty_type,
+                                issueUuid=issue["uuid"],
+                            )
+                            task_models.append(task_model)
+                    except Exception as e:
+                        log_error(
+                            e,
+                            f"Failed to process task {task_data.get('info', 'unknown')} "
+                            f"with UUID {task_data.get('uuid', 'unknown')}"
+                        )
+
+        # Single bulk insert for all issues and tasks
+        if not bulk_insert_issues_and_todos(issue_models, task_models):
+            log_error(Exception("Failed to bulk insert issues and tasks"), "Database insertion failed")
+            return {
+                "success": False,
+                "message": "Failed to insert issues and tasks into database",
+                "data": None,
+            }
 
         system_prompt_result = self.generate_system_prompts(
             generate_issues_result["data"]["issues"], tasks
@@ -295,19 +362,7 @@ class TodoCreatorWorkflow(Workflow):
                     "Issue generation failed",
                 )
                 return None
-            for issue in generate_issues_result["data"]["issues"]:
-                issue_model = IssueModel(
-                    title=issue["title"],
-                    description=issue["description"],
-                    repoOwner=self.context["repo_owner"],
-                    repoName=self.context["repo_name"],
-                    uuid=issue["uuid"],
-                    bountyId=self.context["bounty_id"],
-                    forkOwner=self.context["fork_owner"],
-                    forkUrl=self.context["fork_url"],
-                    bountyType=SwarmBountyType.BUILD_FEATURE,
-                )
-                insert_issue_to_mongodb(issue_model)
+
             return generate_issues_result
         except Exception as e:
             log_error(e, "Issue generation workflow failed")
@@ -348,7 +403,6 @@ class TodoCreatorWorkflow(Workflow):
             log_key_value("Subtasks Number", len(self.context["subtasks"]))
 
             self._process_dependencies(tasks_data)
-            self._save_tasks_to_mongodb(tasks_data, issue_uuid)
 
             return {
                 "success": True,
@@ -425,59 +479,6 @@ class TodoCreatorWorkflow(Workflow):
                         "dependency_tasks", []
                     ):
                         task["dependency_tasks"].remove(dep)
-
-    def _save_tasks_to_mongodb(self, tasks_data: List[Dict[str, Any]], issue_uuid: str) -> None:
-        """Save tasks to MongoDB."""
-        for task in tasks_data:
-            try:
-                task["phases_data"] = self._get_phase_data(task["info"], task["tools"], task["acceptance_criteria"])
-
-                log_key_value("Saving Task to MongoDB", {
-                    "task_info": task["info"],
-                    "task_uuid": task.get("uuid"),
-                })
-                if self.bounty_type == SwarmBountyType.BUILD_FEATURE:
-                    try:
-                        # Extract task info from the structured format
-                        task_info = task["info"]
-                        if isinstance(task_info, dict):
-                            task_title = task_info.get("Todo", "").strip()
-                            task_description = task_info.get("Description", "").strip()
-                            task["info"] = f"{task_title}\n{task_description}"
-                    except Exception as e:
-                        log_error(e, f"Failed to process task info format for task {task.get('uuid', 'unknown')}")
-                        # Fallback to using info as is if processing fails
-                        pass
-                    task_model = NewTaskModel(
-                        title=task_title or "No Title Task",
-                        description=task_description or "No Description Task", 
-                        acceptanceCriteria=task["acceptance_criteria"],
-                        repoOwner=self.context["repo_owner"],
-                        repoName=self.context["repo_name"],
-                        phasesData=task["phases_data"],
-                        dependencyTasks=task.get("dependency_tasks", []),
-                        uuid=task.get("uuid"),
-                        bountyId=self.context["bounty_id"],
-                        bountyType=self.bounty_type,
-                        issueUuid=issue_uuid,
-                    )
-                result = insert_task_to_mongodb(task_model)
-                
-                if result:
-                    log_key_value("Successfully saved task to MongoDB", {
-                        "task_uuid": task.get("uuid"),
-                    })
-                else:
-                    log_error(
-                        Exception("Failed to save task to MongoDB"),
-                        f"Task {task.get('info', 'unknown')} with UUID {task.get('uuid', 'unknown')} was not saved"
-                    )
-            except Exception as e:
-                log_error(
-                    e,
-                    f"Failed to save task {task.get('info', 'unknown')} "
-                    f"with UUID {task.get('uuid', 'unknown')}"
-                )
 
     def _get_phase_data(self, info:str, tools:List[str], acceptance_criteria:List[str]) -> List[PhaseData]:
         """Get the phase data for the task."""

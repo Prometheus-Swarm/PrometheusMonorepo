@@ -223,6 +223,24 @@ def insert_system_prompt_to_mongodb(system_prompt: SystemPromptModel) -> bool:
         print(f"MongoDB error: {e}")
         return False
 
+def bulk_insert_issues_and_todos(issues: List[IssueModel], todos: List[NewTaskModel]) -> bool:
+    """Bulk insert issues and todos into MongoDB."""
+    try:
+        # Start a session for the transaction
+        with mongo_conn.client.start_session() as session:
+            with session.start_transaction():
+                for issue in issues:
+                    issues_collection.insert_one(issue.to_dict(), session=session)
+                for todo in todos:
+                    todos_collection.insert_one(todo.to_dict(), session=session)
+
+        return True
+    except ConnectionFailure:
+        print("MongoDB connection failed")  
+        return False
+    except PyMongoError as e:
+        print(f"MongoDB error: {e}")
+        return False
 
 if __name__ == "__main__":
     task = NewTaskModel(
