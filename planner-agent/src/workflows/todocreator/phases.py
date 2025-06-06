@@ -1,24 +1,27 @@
 """Task decomposition workflow phases implementation."""
 
 from prometheus_swarm.workflows.base import WorkflowPhase, Workflow
+from src.workflows.todocreator.utils import SwarmBountyType
 
 
 class IssueGenerationPhase(WorkflowPhase):
-    def __init__(self, workflow: Workflow, conversation_id: str = None):
+    def __init__(self, workflow: Workflow, conversation_id: str = None, bounty_type: SwarmBountyType = None):
+        prompt_name = "docs_generate_issues" if bounty_type == SwarmBountyType.DOCUMENT_SUMMARIZER else "generate_issues"
         super().__init__(
             workflow=workflow,
-            prompt_name="generate_issues",
-            available_tools=["generate_issues", "list_files", "read_file"],
+            prompt_name=prompt_name,
+            available_tools=["generate_issues", "list_directory_contents", "read_file"],
             conversation_id=conversation_id,
             name="Issue Generation",
         )
 
 
 class IssueValidationPhase(WorkflowPhase):
-    def __init__(self, workflow: Workflow, conversation_id: str = None):
+    def __init__(self, workflow: Workflow, conversation_id: str = None, bounty_type: SwarmBountyType = None):
+        prompt_name = "docs_validate_issues" if bounty_type == SwarmBountyType.DOCUMENT_SUMMARIZER else "validate_issues"
         super().__init__(
             workflow=workflow,
-            prompt_name="validate_issues",
+            prompt_name=prompt_name,
             available_tools=[
                 "generate_issues",
                 "approve_issues",
@@ -31,10 +34,11 @@ class IssueValidationPhase(WorkflowPhase):
 
 
 class TaskDecompositionPhase(WorkflowPhase):
-    def __init__(self, workflow: Workflow, conversation_id: str = None):
+    def __init__(self, workflow: Workflow, conversation_id: str = None, bounty_type: SwarmBountyType = None):
+        prompt_name = "docs_decompose_feature" if bounty_type == SwarmBountyType.DOCUMENT_SUMMARIZER else "decompose_feature"
         super().__init__(
             workflow=workflow,
-            prompt_name="decompose_feature",
+            prompt_name=prompt_name,
             available_tools=[
                 "read_file",
                 "list_files",
@@ -46,10 +50,11 @@ class TaskDecompositionPhase(WorkflowPhase):
 
 
 class TaskValidationPhase(WorkflowPhase):
-    def __init__(self, workflow: Workflow, conversation_id: str = None):
+    def __init__(self, workflow: Workflow, conversation_id: str = None, bounty_type: SwarmBountyType = None):
+        prompt_name = "docs_validate_subtasks" if bounty_type == SwarmBountyType.DOCUMENT_SUMMARIZER else "validate_subtasks"
         super().__init__(
             workflow=workflow,
-            prompt_name="validate_subtasks",
+            prompt_name=prompt_name,
             available_tools=[
                 "read_file",
                 "validate_tasks",
@@ -60,10 +65,11 @@ class TaskValidationPhase(WorkflowPhase):
 
 
 class TaskRegenerationPhase(WorkflowPhase):
-    def __init__(self, workflow: Workflow, conversation_id: str = None):
+    def __init__(self, workflow: Workflow, conversation_id: str = None, bounty_type: SwarmBountyType = None):
+        prompt_name = "docs_regenerate_subtasks" if bounty_type == SwarmBountyType.DOCUMENT_SUMMARIZER else "regenerate_subtasks"
         super().__init__(
             workflow=workflow,
-            prompt_name="regenerate_subtasks",
+            prompt_name=prompt_name,
             available_tools=[
                 "read_file",
                 "regenerate_tasks",
@@ -75,10 +81,11 @@ class TaskRegenerationPhase(WorkflowPhase):
 
 # TODO: Implement Task Dependency Phase
 class TaskDependencyPhase(WorkflowPhase):
-    def __init__(self, workflow: Workflow, conversation_id: str = None):
+    def __init__(self, workflow: Workflow, conversation_id: str = None, bounty_type: SwarmBountyType = None):
+        prompt_name = "docs_dependency_tasks" if bounty_type == SwarmBountyType.DOCUMENT_SUMMARIZER else "dependency_tasks"
         super().__init__(
             workflow=workflow,
-            prompt_name="dependency_tasks",
+            prompt_name=prompt_name,
             available_tools=[
                 "read_file",
                 "create_task_dependency",
@@ -89,10 +96,11 @@ class TaskDependencyPhase(WorkflowPhase):
 
 
 class SystemPromptGenerationPhase(WorkflowPhase):
-    def __init__(self, workflow: Workflow, conversation_id: str = None):
+    def __init__(self, workflow: Workflow, conversation_id: str = None, bounty_type: SwarmBountyType = None):
+        prompt_name = "docs_generate_system_prompts" if bounty_type == SwarmBountyType.DOCUMENT_SUMMARIZER else "generate_system_prompts"
         super().__init__(
             workflow=workflow,
-            prompt_name="generate_system_prompts",
+            prompt_name=prompt_name,
             available_tools=[
                 "read_file",
                 "list_files",

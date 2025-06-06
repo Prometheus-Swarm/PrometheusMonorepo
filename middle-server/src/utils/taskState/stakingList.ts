@@ -1,10 +1,9 @@
-import { getTaskStateInfo } from "@_koii/create-task-cli";
-import { Connection } from "@_koii/web3.js";
 import { RPCURL, BYPASS_TASK_STATE_CHECK } from "../../config/constant";
 import NodeCache from "node-cache";
 import "dotenv/config";
+import { cachedGetTaskState } from "./cachedGetTaskState";
 
-const taskCache = new NodeCache({ stdTTL: 30, checkperiod: 120 });
+const taskCache = new NodeCache({ stdTTL: 120, checkperiod: 120 });
 
 async function getTaskStateStakingKeys(taskId: string): Promise<string[]> {
   const cachedTaskState = taskCache.get(taskId);
@@ -12,8 +11,7 @@ async function getTaskStateStakingKeys(taskId: string): Promise<string[]> {
     return cachedTaskState as string[];
   }
 
-  const connection = new Connection(RPCURL);
-  const taskState = await getTaskStateInfo(connection, taskId);
+  const taskState = await cachedGetTaskState(taskId);
   //   console.log(Object.keys(taskState.stake_list));
   const stakeListKeys = Object.keys(taskState.stake_list);
 

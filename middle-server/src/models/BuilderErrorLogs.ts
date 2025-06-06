@@ -22,8 +22,14 @@ class BuilderErrorLogs {
   @prop({ required: true })
   public stakingKey!: string;
 
+  @prop({ required: false })
+  public swarmBountyId?: string;
+
   @prop({ required: true })
-  public swarmBountyId!: string;
+  public taskId!: string;
+
+  @prop({ required: true })
+  public todoUUID!: string;
 
   @prop({ type: () => [ErrorEntry], default: [] })
   public errors!: ErrorEntry[];

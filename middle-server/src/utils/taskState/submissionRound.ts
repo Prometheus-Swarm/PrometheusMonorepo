@@ -1,5 +1,5 @@
-import { getTaskStateInfo } from "@_koii/create-task-cli";
 import { Connection, PublicKey } from "@_koii/web3.js";
+import { cachedGetTaskState } from "./cachedGetTaskState";
 
 export async function getMaxSubmissionRound(taskId: string): Promise<number | null> {
   if (!taskId) {
@@ -18,7 +18,7 @@ export async function getMaxSubmissionRound(taskId: string): Promise<number | nu
   const connection = new Connection("https://mainnet.koii.network", "confirmed");
 
   try {
-    const taskStateInfo = await getTaskStateInfo(connection, taskId);
+    const taskStateInfo = await cachedGetTaskState(taskId);
     if (!taskStateInfo || !taskStateInfo.submissions) {
       console.error("No task state info found for task:", taskId);
       return null;
@@ -44,7 +44,7 @@ export async function getStartingSlot(taskId: string): Promise<{ startingSlot: n
   }
   const connection = new Connection("https://mainnet.koii.network", "confirmed");
   try {
-    const taskStateInfo = await getTaskStateInfo(connection, taskId);
+    const taskStateInfo = await cachedGetTaskState(taskId);
     if (!taskStateInfo) {
       console.error("No task state info returned for task:", taskId);
       throw new Error("No task state info found");

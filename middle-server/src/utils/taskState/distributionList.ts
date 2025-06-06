@@ -1,12 +1,11 @@
 import { AccountInfo, PublicKey, Connection } from "@_koii/web3.js";
 import { decodeZstd } from "./decodeZstd";
-import { getTaskStateInfo } from "@_koii/create-task-cli";
+import { cachedGetTaskState } from "./cachedGetTaskState";
 import { bincode_js_deserialize } from "../webasm_bincode_deserializer/bincode_js.js";
 
 export async function getDistributionListRounds(taskId: string): Promise<number[]> {
   try {
-    const connection = new Connection("https://mainnet.koii.network", "confirmed");
-    const taskStateInfo = await getTaskStateInfo(connection, taskId);
+    const taskStateInfo = await cachedGetTaskState(taskId);
     return Object.keys(taskStateInfo.distribution_rewards_submission).map(Number);
   } catch (error) {
     console.error("Error in getDistributionListRounds", error);
@@ -15,10 +14,10 @@ export async function getDistributionListRounds(taskId: string): Promise<number[
 }
 
 export async function getDistributionListSubmitter(taskId: string, round: string): Promise<string | null> {
-  const connection = new Connection("https://mainnet.koii.network", "confirmed");
+  // const connection = new Connection("https://mainnet.koii.network", "confirmed");
 
   try {
-    const taskStateInfo = await getTaskStateInfo(connection, taskId);
+    const taskStateInfo = await cachedGetTaskState(taskId);
     if (!taskStateInfo || !taskStateInfo.distribution_rewards_submission) {
       console.error("No distribution rewards submission found for task:", taskId);
       return null;

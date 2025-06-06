@@ -1,18 +1,18 @@
-from src.server.create_app import create_app
+from .create_app import create_app
 import os
 from flask import request, jsonify
 from prometheus_swarm.utils.logging import logger, swarm_bounty_id_var
 from prometheus_swarm.clients import setup_client
-from src.workflows.todocreator.workflow import TodoCreatorWorkflow
-from src.workflows.todocreator.prompts import PROMPTS
+from ..workflows.vibeTodoCreator.workflow import TodoCreatorWorkflow 
+from ..workflows.vibeTodoCreator.prompts import PROMPTS
 from prometheus_swarm.utils.logging import log_error
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor
-from src.workflows.todocreator.utils import SwarmBountyType
-
+from ..workflows.vibeTodoCreator.utils import SwarmBountyType
+from .models import delete_a_spec_from_mongodb
 # from src.workflows.audit.workflow import AuditWorkflow
 # from src.workflows.audit.prompts import PROMPTS as AUDIT_PROMPTS
-
+from .slack import send_message_to_slack
 # import requests
 
 load_dotenv()
@@ -59,13 +59,7 @@ def audit_issues_and_tasks(future):
     pass
 
 
-def create_todos(
-    source_url: str,
-    fork_url: str,
-    issue_spec: dict,
-    bounty_id: str,
-    # bounty_type: SwarmBountyType,
-):
+def create_todos(source_url: str, fork_url: str, issue_spec: dict, bounty_id: str, bounty_type: SwarmBountyType):
     """Run the workflow in a background thread"""
     try:
         # Set the bounty ID in the worker thread's context
@@ -78,13 +72,16 @@ def create_todos(
             fork_url=fork_url,
             issue_spec=issue_spec,
             bounty_id=bounty_id,
-            # bounty_type=bounty_type,
+            bounty_type=SwarmBountyType.BUILD_FEATURE,
         )
         result = workflow.run()
         if not result or not result.get("success"):
+            # Simply add retry because it may cause the initifinite loop issue
+            # delete_a_spec_from_mongodb(bounty_id)
             log_error(
                 Exception(result.get("error", "No result")), "Task creation failed"
             )
+            send_message_to_slack(f"Planner failed for {bounty_id} with error {result.get('error', 'No result')}")
             return {"success": False, "error": result.get("error", "No result")}
         return {
             "success": True,
@@ -99,6 +96,9 @@ def create_todos(
         }
     except Exception as e:
         logger.error(f"Workflow execution failed: {str(e)}")
+        # Remove Spec from MongoDB
+        # Simply add retry because it may cause the initifinite loop issue
+        # delete_a_spec_from_mongodb(bounty_id)
         return {"success": False, "error": str(e)}
 
 
@@ -123,6 +123,7 @@ def create_plan():
             fork_url=data["forkUrl"],
             issue_spec=data["issueSpec"],
             bounty_id=data["bountyId"],
+            bounty_type=data["bountyType"],
         )
         future.add_done_callback(audit_issues_and_tasks)
 
@@ -137,4 +138,18 @@ def create_plan():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
+    
+    # # Test plan creation
+    # test_data = {
+    #     "sourceUrl": "https://github.com/Prometheus-Swarm/prometheus-test",
+    #     "forkUrl": "https://github.com/Prometheus-Swarm/prometheus-test",
+    #     "issueSpec": "Please create a new coingekko api endpoint feature for the project",
+    #     "bountyId": "test-bounty-123",
+    #     "bountyType": "BUILD_FEATURE"
+    # }
+    
+    # # Create a test request context
+    # with app.test_request_context(json=test_data):
+    #     create_plan()
+    
     app.run(host="0.0.0.0", port=port, debug=True)

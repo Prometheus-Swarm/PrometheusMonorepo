@@ -1,19 +1,18 @@
-import { getTaskStateInfo } from "@_koii/create-task-cli";
-import { Connection } from "@_koii/web3.js";
+import { cachedGetTaskState } from "./taskState/cachedGetTaskState";
 import { RPCURL, BYPASS_TASK_STATE_CHECK } from "../config/constant";
 import NodeCache from "node-cache";
 import "dotenv/config";
+import { Connection } from "@_koii/web3.js";
 
-const taskCache = new NodeCache({ stdTTL: 30, checkperiod: 120 });
-
+const taskCache = new NodeCache({ stdTTL: 120, checkperiod: 120 });
+// Set a cache for the task state
 export async function getTaskState(taskId: string): Promise<string[]> {
   const cachedTaskState = taskCache.get(taskId);
   if (cachedTaskState) {
     return cachedTaskState as string[];
   }
 
-  const connection = new Connection(RPCURL);
-  const taskState = await getTaskStateInfo(connection, taskId);
+  const taskState = await cachedGetTaskState(taskId);
   //   console.log(Object.keys(taskState.stake_list));
   const stakeListKeys = Object.keys(taskState.stake_list);
 
@@ -37,12 +36,3 @@ export async function isValidStakingKey(taskId: string, pubKey: string): Promise
   }
   return stakeListKeys.includes(pubKey);
 }
-// async function test() {
-//   const stakeListKeys = await getTaskState("H5CKDzSi2qWs7y7JGMX8sGvAZnWcUDx8k1mCMVWyJf1M");
-//   console.log(stakeListKeys);
-//   console.log(1)
-//     const stakeList = await getTaskState("H5CKDzSi2qWs7y7JGMX8sGvAZnWcUDx8k1mCMVWyJf1M");
-//     console.log(stakeList);
-//     console.log(2)
-// }
-// test();

@@ -58,7 +58,7 @@ async function checkExistingAssignment(stakingKey: string, roundNumber: number) 
         },
       },
     })
-      .select("title acceptanceCriteria repoOwner repoName uuid issueUuid assignees dependencyTasks bountyId")
+      .select("acceptanceCriteria repoOwner repoName uuid issueUuid assignees dependencyTasks bountyId phasesData")
       .lean();
 
     if (!todo) return null;
@@ -188,20 +188,27 @@ export const fetchTodoLogic = async (
         },
       };
     }
+    // return {
+    //   statuscode: 201,
+    //   data: {
+    //     success: true,
+    //     data: {
+    //       phasesData: existingAssignment.todo.phasesData,
+    //       todo_uuid: existingAssignment.todo.uuid,
+    //       issue_uuid: existingAssignment.todo.issueUuid,
+    //       acceptance_criteria: existingAssignment.todo.acceptanceCriteria,
+    //       repo_owner: existingAssignment.todo.repoOwner,
+    //       repo_name: existingAssignment.todo.repoName,
+    //       dependency_pr_urls: existingAssignment.dependencyPrUrls,
+    //       bounty_id: existingAssignment.todo.bountyId,
+    //     },
+    //   },
+    // };
     return {
-      statuscode: 200,
+      statuscode: 409,
       data: {
-        success: true,
-        data: {
-          title: existingAssignment.todo.title,
-          todo_uuid: existingAssignment.todo.uuid,
-          issue_uuid: existingAssignment.todo.issueUuid,
-          acceptance_criteria: existingAssignment.todo.acceptanceCriteria,
-          repo_owner: existingAssignment.todo.repoOwner,
-          repo_name: existingAssignment.todo.repoName,
-          dependency_pr_urls: existingAssignment.dependencyPrUrls,
-          bounty_id: existingAssignment.todo.bountyId,
-        },
+        success: false,
+        message: "Task already assigned",
       },
     };
   }
@@ -212,6 +219,8 @@ export const fetchTodoLogic = async (
       status: IssueStatus.IN_PROGRESS,
       bountyType: SwarmBountyType.BUILD_FEATURE,
     }).sort({ createdAt: 1 });
+
+    console.log("Found in-progress issues:", inProgressIssues.length);
 
     if (inProgressIssues.length === 0) {
       return {
@@ -229,15 +238,20 @@ export const fetchTodoLogic = async (
     for (const issue of inProgressIssues) {
       if (issue.bountyId && !uniqueBountyIds.has(issue.bountyId)) {
         uniqueBountyIds.add(issue.bountyId);
+      }
+      if (issue.uuid && !uniqueBountyIssues.has(issue.uuid)) {
         uniqueBountyIssues.add(issue.uuid);
       }
     }
+
+    console.log("Unique bounty issues:", Array.from(uniqueBountyIssues));
 
     // 3. Use aggregation to find eligible todos across all unique bounty issues
     const eligibleTodos = await TodoModel.aggregate([
       // Match initial criteria
       {
         $match: {
+          phasesData: { $exists: true, $ne: [] },
           issueUuid: { $in: Array.from(uniqueBountyIssues) },
           $or: [
             { status: TodoStatus.INITIALIZED },
@@ -320,6 +334,24 @@ export const fetchTodoLogic = async (
       },
     ]);
 
+    console.log("Eligible todos found:", eligibleTodos.length);
+    if (eligibleTodos.length === 0) {
+      console.log("No eligible todos found. Checking raw todos...");
+      const rawTodos = await TodoModel.find({
+        issueUuid: { $in: Array.from(uniqueBountyIssues) },
+        status: TodoStatus.INITIALIZED,
+      });
+      console.log("Raw todos found:", rawTodos.length);
+      if (rawTodos.length > 0) {
+        console.log("Sample todo:", {
+          uuid: rawTodos[0].uuid,
+          status: rawTodos[0].status,
+          dependencyTasks: rawTodos[0].dependencyTasks,
+          issueUuid: rawTodos[0].issueUuid,
+        });
+      }
+    }
+
     if (eligibleTodos.length === 0) {
       return {
         statuscode: 409,
@@ -390,7 +422,7 @@ export const fetchTodoLogic = async (
 
     const data = {
       _id: updatedTodo._id,
-      title: updatedTodo.title,
+      phasesData: updatedTodo.phasesData,
       todo_uuid: updatedTodo.uuid,
       issue_uuid: updatedTodo.issueUuid,
       acceptance_criteria: updatedTodo.acceptanceCriteria,
@@ -425,3 +457,21 @@ export const fetchTodoLogic = async (
     };
   }
 };
+
+// export const test = async () => {
+//   const response = await fetchTodoLogic(
+//     {
+//       signature: "0x1234567890123456789012345678901234567890",
+//       stakingKey: "0x1234567890123456789012345678901234567890",
+//       pubKey: "0x1234567890123456789012345678901234567890",
+//     },
+//     {
+//       githubUsername: "test",
+//       roundNumber: 1,
+//       taskId: "test-task",
+//     },
+//   );
+//   console.log(response);
+// };
+
+// test();

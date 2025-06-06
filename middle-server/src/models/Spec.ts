@@ -35,7 +35,7 @@ enum SpecStatus {
   existingConnection: builder247DB,
 })
 class Spec {
-  @prop({ required: true })
+  @prop({ required: true, type: String })
   public title!: string;
 
   @prop({ required: true })

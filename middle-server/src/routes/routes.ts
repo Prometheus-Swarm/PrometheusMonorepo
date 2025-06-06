@@ -27,9 +27,9 @@ import { getAssignedTo } from "../controllers/prometheus/getAssignedTo";
 import { classification } from "../controllers/prometheus/classification";
 
 /********** Supporter ***********/
-import { bindRequest } from "../controllers/supporter/bindRequest";
-import { fetchRequest as fetchRepoList } from "../controllers/supporter/fetchRequest";
-import { checkRequest as checkRepoRequest } from "../controllers/supporter/checkRequest";
+// import { bindRequest } from "../controllers/supporter/bindRequest";
+// import { fetchRequest as fetchRepoList } from "../controllers/supporter/fetchRequest";
+// import { checkRequest as checkRepoRequest } from "../controllers/supporter/checkRequest";
 
 const router = Router();
 
@@ -40,7 +40,7 @@ router.post("/builder/add-pr-to-to-do", addPR as RequestHandler);
 router.post("/builder/add-issue-pr", addIssuePR as RequestHandler);
 router.post("/builder/check-to-do", checkToDo as RequestHandler);
 router.post("/builder/assign-issue", assignIssue as RequestHandler);
-router.post("/builder/update-audit-result", updateAuditResult as RequestHandler);
+// router.post("/builder/update-audit-result", updateAuditResult as RequestHandler);
 router.post("/builder/fetch-issue", fetchIssue as RequestHandler);
 router.post("/builder/check-issue", checkIssue as RequestHandler);
 router.post("/builder/record-log", addLogToDB as RequestHandler);
@@ -60,9 +60,9 @@ router.get("/prometheus/get-assigned-nodes", getAssignedTo as RequestHandler);
 router.post("/prometheus/classification", verifyBearerToken, classification as RequestHandler);
 
 /****************** Supporter **************/
-router.post("/supporter/bind-key-to-github", bindRequest as RequestHandler);
-router.post("/supporter/fetch-repo-list", fetchRepoList as RequestHandler);
-router.post("/supporter/check-request", checkRepoRequest as RequestHandler);
+// router.post("/supporter/bind-key-to-github", bindRequest as RequestHandler);
+// router.post("/supporter/fetch-repo-list", fetchRepoList as RequestHandler);
+// router.post("/supporter/check-request", checkRepoRequest as RequestHandler);
 
 router.get("/hello", (req, res) => {
   res.json({ status: 200, message: "running" });

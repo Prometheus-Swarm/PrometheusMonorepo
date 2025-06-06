@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { DocumentationModel } from "../../../models/Documentation";
+import { TodoModel } from "../../../models/Todo";
 import { documentSummarizerTaskID } from "../../../config/constant";
 
 // Helper function to verify request body
@@ -41,7 +41,7 @@ export async function checkToDoAssignment(
     };
     console.log("Data:", data);
     // WE SHOULD NOT CHECK THE LIVE ROUND NUMBER, BECAUSE WE NEED TO PAY IF DISTRIBUTION LATE
-    const result = await DocumentationModel.findOne({
+    const result = await TodoModel.findOne({
       assignedTo: {
         $elemMatch: {
           stakingKey: stakingKey,

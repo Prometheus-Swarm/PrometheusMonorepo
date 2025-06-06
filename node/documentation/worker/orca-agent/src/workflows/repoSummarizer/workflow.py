@@ -14,6 +14,7 @@ from prometheus_swarm.workflows.utils import (
 )
 from kno_sdk import index_repo
 from prometheus_swarm.tools.kno_sdk_wrapper.implementations import build_tools_wrapper
+from prometheus_swarm.tools.git_operations.implementations import commit_and_push
 from src.workflows.repoSummarizer.prompts import PROMPTS
 from src.workflows.repoSummarizer.docs_sections import (
     DOCS_SECTIONS,
@@ -21,8 +22,6 @@ from src.workflows.repoSummarizer.docs_sections import (
     FINAL_SECTIONS,
 )
 from pathlib import Path
-
-from prometheus_swarm.tools.git_operations.implementations import commit_and_push
 
 
 class Task:
@@ -53,10 +52,12 @@ class RepoSummarizerWorkflow(Workflow):
     def __init__(
         self,
         client,
-        prompts,
         repo_url,
+        phasesData,
+        PROMPTS,
         podcall_signature=None,
         task_id=None,
+        tools=None,
     ):
         # Extract owner and repo name from URL
         # URL format: https://github.com/owner/repo
@@ -66,13 +67,16 @@ class RepoSummarizerWorkflow(Workflow):
 
         super().__init__(
             client=client,
-            prompts=prompts,
+            prompts=PROMPTS,
             repo_url=repo_url,
             repo_owner=repo_owner,
             repo_name=repo_name,
             podcall_signature=podcall_signature,
             task_id=task_id,
         )
+        self.phasesData = phasesData
+        self.tools = tools
+        self._phase_data_setup()
 
     def submit_draft_pr(self, pr_url):
         """Submit the draft PR."""
@@ -94,12 +98,10 @@ class RepoSummarizerWorkflow(Workflow):
                 "message": "Failed to submit draft PR",
                 "data": None,
             }
-    def setup(self):
-        """Set up repository and workspace."""
+
+    def _token_check(self):
         check_required_env_vars(["GITHUB_TOKEN", "GITHUB_USERNAME"])
         validate_github_auth(os.getenv("GITHUB_TOKEN"), os.getenv("GITHUB_USERNAME"))
-
-        # Get the default branch from GitHub
         try:
             gh = Github(os.getenv("GITHUB_TOKEN"))
             self.context["repo_full_name"] = (
@@ -114,8 +116,9 @@ class RepoSummarizerWorkflow(Workflow):
         except Exception as e:
             log_error(e, "Failed to get default branch, using 'main'")
             self.context["base"] = "main"
-
-        # Set up repository directory
+    
+    def _repository_setup(self):
+        """Set up repository and workspace."""
         setup_result = setup_repository(
             self.context["repo_url"],
             github_token=os.getenv("GITHUB_TOKEN"),
@@ -140,14 +143,26 @@ class RepoSummarizerWorkflow(Workflow):
                 "message": "Failed to build tools setup",
                 "data": None,
             }
-        # Configure Git user info
-        # setup_git_user_config(self.context["repo_path"])
+    def _phase_data_setup(self):
+        """Set up phases with data from MongoDB format."""
+        # Update PROMPTS with the prompts from phasesData
 
-        # Get current files for context
+
+        # Initialize phases with tools
+        self.branch_phase = phases.BranchCreationPhase(workflow=self, tools=self.phasesData[0]["tools"])
+        self.create_pull_request_phase = phases.CreatePullRequestPhase(workflow=self, tools=self.phasesData[1]["tools"])
+        self.consolidated_phase = phases.ConsolidatedPhase(workflow=self, tools=self.phasesData[2]["tools"])
+
+    def setup(self):
+        self._token_check()
+        self._repository_setup()
+        self._phase_data_setup()
+
     def build_tools_setup(self):
         index = index_repo(Path(self.context["repo_path"]))
         tools = build_tools_wrapper(index)
         return tools
+
     def cleanup(self):
         """Cleanup workspace."""
         # Make sure we're not in the repo directory before cleaning up
@@ -156,15 +171,11 @@ class RepoSummarizerWorkflow(Workflow):
 
         # Clean up the repository directory
         cleanup_repository(self.original_dir, self.context.get("repo_path", ""))
-        # Clean up the MongoDB
 
     def run(self):
         self.setup()
-        # Create a feature branch
-        log_section("CREATING FEATURE BRANCH")
-        branch_phase = phases.BranchCreationPhase(workflow=self)
-        branch_result = branch_phase.execute()
-
+        log_section("#1 Branch Creation")
+        branch_result = self.branch_phase.execute()
         if not branch_result or not branch_result.get("success"):
             log_error(Exception("Branch creation failed"), "Branch creation failed")
             return {
@@ -172,16 +183,14 @@ class RepoSummarizerWorkflow(Workflow):
                 "message": "Branch creation failed",
                 "data": None,
             }
-
-        # Store branch name in context
         self.context["head"] = branch_result["data"]["branch_name"]
-        log_key_value("Branch created", self.context["head"])
+
         try:
+            log_section("#2 Commit and Push")
             commit_and_push(message="empty commit", allow_empty=True)
+            log_section("#3 Create Draft Pull Request")
             draft_pr_result = self.create_pull_request()
             if draft_pr_result.get("success"):
-
-                print("DRAFT PR RESULT", draft_pr_result)
                 self.submit_draft_pr(draft_pr_result.get("data").get("pr_url"))
             else:
                 return {
@@ -196,189 +205,55 @@ class RepoSummarizerWorkflow(Workflow):
                 "message": "Failed to commit and push",
                 "data": None,
             }
-        
-        # Classify repository
-        repo_classification_result = self.classify_repository()
-        if not repo_classification_result or not repo_classification_result.get(
-            "success"
-        ):
-            log_error(
-                Exception("Repository classification failed"),
-                "Repository classification failed",
-            )
-            return {
-                "success": False,
-                "message": "Repository classification failed",
-                "data": None,
-            }
-
-        # Get prompt name for README generation
-        prompt_name = repo_classification_result["data"].get("repo_type")
-        if not prompt_name:
-            log_error(
-                Exception("No prompt name returned from repository classification"),
-                "Repository classification failed to provide prompt name",
-            )
-            return {
-                "success": False,
-                "message": "Repository classification failed to provide prompt name",
-                "data": None,
-            }
-
-        # Generate README file
-        for i in range(3):
-            if i > 0:
-                prompt_name = "other"
-            readme_result = self.generate_readme_file(prompt_name)
-            if not readme_result or not readme_result.get("success"):
-                log_error(
-                    Exception("README generation failed"), "README generation failed"
-                )
+        try:
+            log_section("#4 Consolidated Phase")
+            consolidated_phase_result = self.consolidated_phase()
+            if not consolidated_phase_result or not consolidated_phase_result.get("success"):
+                log_error(Exception("Consolidated phase failed"), "Consolidated phase failed")
                 return {
                     "success": False,
-                    "message": "README generation failed",
+                    "message": "Consolidated phase failed",
                     "data": None,
                 }
-            if readme_result.get("success"):
-                review_result = self.review_readme_file(readme_result)
-                if not review_result or not review_result.get("success"):
-                    log_error(Exception("README review failed"), "README review failed")
-                    return {
-                        "success": False,
-                        "message": "README review failed",
-                        "data": None,
-                    }
-                log_key_value("README review result", review_result.get("data"))
-                if (
-                    review_result.get("success")
-                    and review_result.get("data").get("recommendation") == "APPROVE"
-                ):
-                    result = self.create_pull_request()
-                    return result
-                else:
-                    self.context["previous_review_comments_section"] = PROMPTS[
-                        "previous_review_comments"
-                    ] + review_result.get("data").get("comment")
-
-        return {
-            "success": False,
-            "message": "README Review Exceed Max Attempts",
-            "data": None,
-        }
-
-    def classify_repository(self):
-        try:
-            log_section("CLASSIFYING REPOSITORY TYPE")
-            repo_classification_phase = phases.RepoClassificationPhase(workflow=self)
-            return repo_classification_phase.execute()
+            # return one_phase_only_result
         except Exception as e:
-            log_error(e, "Repository classification workflow failed")
+            log_error(e, "Failed to create pull request")
             return {
                 "success": False,
-                "message": f"Repository classification workflow failed: {str(e)}",
+                "message": "Failed to create pull request",
                 "data": None,
             }
-
-    def review_readme_file(self, readme_result):
-        """Execute the issue generation workflow."""
         try:
-            log_section("REVIEWING README FILE")
-            review_readme_file_phase = phases.ReadmeReviewPhase(workflow=self)
-            return review_readme_file_phase.execute()
+            production_pr_result = self.create_pull_request()
+            return production_pr_result
         except Exception as e:
-            log_error(e, "Readme file review workflow failed")
+            log_error(e, "Failed to create pull request")
             return {
                 "success": False,
-                "message": f"Readme file review workflow failed: {str(e)}",
+                "message": "Failed to create pull request",
                 "data": None,
             }
-
-    def generate_readme_section(self, section):
-        """Create the subsections of the README file."""
-
-        self.context["section_name"] = section["name"]
-        self.context["section_description"] = section["description"]
-
+    def consolidated_phase(self):
+        """Create a pull request for the README file."""
         try:
-
-            # ==================== Generate README file ====================
-            log_section("GENERATING README SECTION")
-            generate_readme_section_phase = phases.ReadmeSectionGenerationPhase(
-                workflow=self
-            )
-            readme_result = generate_readme_section_phase.execute()
-
-            # Check README Generation Result
-
-
-            log_key_value("README RESULT", readme_result)
-            if not readme_result or not readme_result.get("success"):
-                log_error(
-                    Exception(readme_result.get("error", "No result")),
-                    "Readme file generation failed",
-                )
-                return None
-
-            return readme_result
-
+            return self.consolidated_phase.execute()
         except Exception as e:
-            log_error(e, "Readme file generation workflow failed")
+            log_error(e, "Failed to create pull request")
             return {
                 "success": False,
-                "message": f"Readme file generation workflow failed: {str(e)}",
+                "message": "Failed to create pull request",
                 "data": None,
             }
-
-    def generate_readme_file(self, repo_type):
-        """Generate the README file."""
-
-        readme_sections_spec = (
-            list(INITIAL_SECTIONS)
-            # + list(DOCS_SECTIONS[repo_type])
-            # + list(FINAL_SECTIONS)
-        )
-
-        self.context["repo_type"] = repo_type
-        self.context["all_sections"] = ", ".join(
-            [section["name"] for section in readme_sections_spec]
-        )
-        try:
-            readme_sections = []
-            for section in readme_sections_spec:
-                readme_result = self.generate_readme_section(section)
-                print("README RESULT", readme_result)
-                if not readme_result or not readme_result.get("success"):
-                    log_error(
-                        Exception(readme_result.get("error", "No result")),
-                        "Readme file generation failed",
-                    )
-                    return None
-
-                readme_section_content = readme_result.get("data", {}).get(
-                    "section_content"
-                )
-                if readme_section_content:
-                    readme_section_title = readme_result.get("data", {}).get(
-                        "section_name"
-                    )
-
-                    readme_section = (
-                        f"## {readme_section_title}\n\n" f"{readme_section_content}"
-                    )
-                    readme_sections.append(readme_section)
-
-            self.context["readme_content"] = "\n\n".join(readme_sections)
-
-            generate_readme_file_phase = phases.ReadmeFileCreationPhase(workflow=self)
-            return generate_readme_file_phase.execute()
-
-        except Exception as e:
-            log_error(e, "Readme file generation workflow failed")
-            return {
-                "success": False,
-                "message": f"Readme file generation workflow failed: {str(e)}",
-                "data": None,
-            }
+    def clean_prompt_string(self, prompt: str) -> str:
+        """Clean up double curly braces in prompt strings to single curly braces.
+        
+        Args:
+            prompt (str): The prompt string that may contain double curly braces
+            
+        Returns:
+            str: The cleaned prompt string with single curly braces
+        """
+        return prompt.replace("{{", "{").replace("}}", "}")
 
     def create_pull_request(self):
         """Create a pull request for the README file."""
@@ -392,15 +267,11 @@ class RepoSummarizerWorkflow(Workflow):
             self.context["description"] = (
                 f"This PR adds a README file for the {self.context['repo_name']} repository."
             )
-
             log_key_value(
                 "Creating PR",
                 f"from {self.context['head']} to {self.context['base']}",
             )
-
-            print("CONTEXT", self.context)
-            create_pull_request_phase = phases.CreatePullRequestPhase(workflow=self)
-            return create_pull_request_phase.execute()
+            return self.create_pull_request_phase.execute()
         except Exception as e:
             log_error(e, "Pull request creation workflow failed")
             return {

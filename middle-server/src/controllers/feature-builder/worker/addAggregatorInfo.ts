@@ -79,6 +79,7 @@ async function verifySignatureData(
 }
 
 export const addAggregatorInfo = async (req: Request, res: Response) => {
+  console.log("addAggregatorInfo", req.body);
   const requestBody = verifyRequestBody(req);
   if (!requestBody) {
     res.status(401).json({
@@ -105,7 +106,6 @@ export const addAggregatorInfo = async (req: Request, res: Response) => {
   const response = await addAggregatorInfoLogic(signatureData);
   res.status(response.statuscode).json(response.data);
 };
-
 export const addAggregatorInfoLogic = async (signatureData: {
   roundNumber: number;
   githubUsername: string;
@@ -115,57 +115,66 @@ export const addAggregatorInfoLogic = async (signatureData: {
   console.log("Searching for issue with:", {
     uuid: signatureData.issueUuid,
   });
-  const issue = await IssueModel.findOneAndUpdate(
-    {
-      uuid: signatureData.issueUuid,
-      bountyType: SwarmBountyType.BUILD_FEATURE,
-    },
-    {
-      $set: {
-        status: IssueStatus.IN_PROGRESS,
+
+  const session = await IssueModel.startSession();
+  try {
+    const response = await session.withTransaction(async () => {
+      const issue = await IssueModel.findOneAndUpdate(
+        {
+          uuid: signatureData.issueUuid,
+          bountyType: SwarmBountyType.BUILD_FEATURE,
+        },
+        {
+          $set: {
+            status: IssueStatus.IN_PROGRESS,
+            aggregatorOwner: signatureData.githubUsername,
+            aggregatorUrl: signatureData.aggregatorUrl,
+          },
+        },
+        { new: true, session },
+      );
+
+      if (!issue) {
+        throw new Error("Issue not found");
+      }
+
+      const todoUpdateResult = await TodoModel.updateMany(
+        { issueUuid: signatureData.issueUuid },
+        { $set: { repoOwner: signatureData.githubUsername } },
+        { session },
+      );
+
+      console.log("Updated todos for issue:", {
+        issueUuid: signatureData.issueUuid,
+        todosUpdated: todoUpdateResult.modifiedCount,
         aggregatorOwner: signatureData.githubUsername,
-        aggregatorUrl: signatureData.aggregatorUrl,
-      },
-    },
-    { new: true },
-  );
-  if (!issue) {
+      });
+
+      if (issue.bountyId) {
+        await updateSwarmBountyStatus(issue.bountyId, SwarmBountyStatus.ASSIGNED);
+      }
+
+      return {
+        statuscode: 200,
+        data: {
+          success: true,
+          message: "Aggregator info added and todos updated",
+          todosUpdated: todoUpdateResult.modifiedCount,
+        },
+      };
+    });
+
+    return response;
+  } catch (error: unknown) {
+    console.error("Transaction failed:", error);
     return {
       statuscode: 409,
       data: {
         success: false,
-        message: "Issue not found",
+        message: error instanceof Error ? error.message : "Failed to update issue and todos",
       },
     };
+  } finally {
+    await session.endSession();
   }
-
-  // Update all todos associated with this issue to use the aggregator owner
-  // This ensures workers fork from the aggregator repo, not the original
-  const todoUpdateResult = await TodoModel.updateMany(
-    { issueUuid: signatureData.issueUuid },
-    { $set: { repoOwner: signatureData.githubUsername } },
-  );
-
-  console.log("Updated todos for issue:", {
-    issueUuid: signatureData.issueUuid,
-    todosUpdated: todoUpdateResult.modifiedCount,
-    aggregatorOwner: signatureData.githubUsername,
-  });
-
-  issue.status = IssueStatus.IN_PROGRESS;
-
-  await issue.save();
-
-  if (issue.bountyId) {
-    await updateSwarmBountyStatus(issue.bountyId, SwarmBountyStatus.ASSIGNED);
-  }
-
-  return {
-    statuscode: 200,
-    data: {
-      success: true,
-      message: "Aggregator info added and todos updated",
-      todosUpdated: todoUpdateResult.modifiedCount,
-    },
-  };
 };

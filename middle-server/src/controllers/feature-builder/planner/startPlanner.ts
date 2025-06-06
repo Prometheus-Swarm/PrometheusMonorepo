@@ -3,7 +3,7 @@ import { SwarmBountyType } from "../../../config/constant";
 interface PlannerRequestBody {
   sourceUrl: string;
   forkUrl: string;
-  issueSpec: string;
+  issueSpec?: string | null;
   bountyId: string;
   bountyType: SwarmBountyType;
 }
@@ -26,7 +26,7 @@ export const startPlannerLogic = async (
 }> => {
   try {
     const baseUrl = process.env.NODE_ENV === "production" ? "http://planner-agent:8080" : "http://127.0.0.1:8080";
-
+    console.log("baseUrl", baseUrl);
     const response = await fetch(`${baseUrl}/create-plan`, {
       method: "POST",
       headers: {
