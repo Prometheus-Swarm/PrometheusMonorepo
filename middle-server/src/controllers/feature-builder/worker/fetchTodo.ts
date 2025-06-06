@@ -251,6 +251,7 @@ export const fetchTodoLogic = async (
       // Match initial criteria
       {
         $match: {
+          phasesData: { $exists: true, $ne: [] },
           issueUuid: { $in: Array.from(uniqueBountyIssues) },
           $or: [
             { status: TodoStatus.INITIALIZED },
