@@ -2,9 +2,9 @@
 
 import os
 import requests
-from typing import Any
+from typing import Any, Dict
 from prometheus_swarm.utils.logging import set_conversation_hook, swarm_bounty_id_var
-
+import uuid
 
 def setup_remote_logging():
     """Set up remote logging hooks."""
