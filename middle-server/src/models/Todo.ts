@@ -102,7 +102,7 @@ class Todo {
   public assignees?: AssignedInfo[];
 
   @prop({ required: true, type: () => [PhaseData] })
-  public phasesData!: PhaseData[];
+  public phasesData?: PhaseData[];
 
   @prop({
     type: String,

@@ -199,6 +199,7 @@ export const fetchTodoLogic = async (
           { status: { $in: [DocumentationStatus.DONE, DocumentationStatus.FAILED] } },
           { "assignedTo.stakingKey": requestBody.stakingKey },
           { "assignedTo.githubUsername": signatureData.githubUsername },
+          { phasesData: { $exists: true } },
         ],
         bountyType: SwarmBountyType.DOCUMENT_SUMMARIZER,
         $or: [
