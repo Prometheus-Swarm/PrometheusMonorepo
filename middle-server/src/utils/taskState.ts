@@ -36,4 +36,3 @@ export async function isValidStakingKey(taskId: string, pubKey: string): Promise
   }
   return stakeListKeys.includes(pubKey);
 }
-
